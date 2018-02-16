@@ -1,0 +1,80 @@
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS "users" (
+	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`username`	TEXT NOT NULL,
+	`password`	TEXT NOT NULL,
+	`pumps`	INTEGER
+);
+INSERT INTO users VALUES(1,'busuula','jonah',3);
+INSERT INTO users VALUES(2,'kakooge','kaks',5);
+INSERT INTO users VALUES(3,'lukomera','kaks',5);
+INSERT INTO users VALUES(4,'kafeero','jonah',3);
+INSERT INTO users VALUES(5,'kapuch','timothy',7);
+CREATE TABLE `fuel_purchases` (
+	`id`	INTEGER PRIMARY KEY AUTOINCREMENT,
+	`date`	TEXT NOT NULL,
+	`branchid`	INTEGER NOT NULL,
+	`pms`	INTEGER,
+	`pms_price`	INTEGER,
+	`ago`	INTEGER,
+	`ago_price`	INTEGER,
+	`bik`	INTEGER,
+	`bik_price`	INTEGER
+);
+CREATE TABLE `expenses` (
+	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`branchid`	INTEGER NOT NULL,
+	`date`	TEXT NOT NULL,
+	`name`	TEXT,
+	`amount`	INTEGER
+);
+CREATE TABLE `dips` (
+	`id`	INTEGER NOT NULL,
+	`branch_id`	INTEGER NOT NULL,
+	`date`	TEXT,
+	`opening_dips`	REAL,
+	`closing_dips`	REAL,
+	PRIMARY KEY(`id`)
+);
+CREATE TABLE IF NOT EXISTS "fuel" (
+	`fuelid`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`branchid`	TEXT,
+	`date`	INTEGER NOT NULL,
+	`product`	TEXT,
+	`opening_meter`	REAL,
+	`closing_meter`	REAL,
+	`rtt`	REAL
+);
+CREATE TABLE `fuel_prices` (
+	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`date`	TEXT NOT NULL,
+	`branchid`	INTEGER NOT NULL,
+	`pms`	INTEGER,
+	`ago`	INTEGER,
+	`bik`	INTEGER
+);
+CREATE TABLE `mobile` (
+	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`date`	TEXT NOT NULL,
+	`branchid`	INTEGER NOT NULL,
+	`airtel_sending`	INTEGER,
+	`airtel_withdraw`	INTEGER,
+	`mtn_sending`	INTEGER,
+	`mtn_withdraw`	INTEGER
+);
+
+DELETE FROM sqlite_sequence;
+INSERT INTO sqlite_sequence VALUES('users',5);
+INSERT INTO sqlite_sequence VALUES('expenses',20);
+INSERT INTO sqlite_sequence VALUES('debtors',18);
+INSERT INTO sqlite_sequence VALUES('lubricants',9);
+INSERT INTO sqlite_sequence VALUES('fuel',39);
+INSERT INTO sqlite_sequence VALUES('prepaid',3);
+INSERT INTO sqlite_sequence VALUES('mobile',3);
+COMMIT;
+
+
+
+
+
