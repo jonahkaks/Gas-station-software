@@ -64,7 +64,7 @@ def sales_shs(index=0, litres=0, price=0):
     real_insert(pr, index, price)
     amount = litres * price
     real_insert(amount_array, index, amount)
-    return str(amount), str(add_array(amount_array))
+    return str(amount), str(add_array(amount_array, index))
 
 
 def expenses(index=0, exp_name="expense", exp_amount=0):
@@ -81,7 +81,7 @@ def expenses(index=0, exp_name="expense", exp_amount=0):
         handle.insert("expenses", insert_id, branch_id[0], str(sales_date[0]),
                       expn[index], expa[index])
         real_insert(expid, index, insert_id)
-    return str(add_array(expa))
+    return str(add_array(expa, index))
 
 
 def dips(index=0, opening_dips=0, closing_dips=0):
@@ -116,7 +116,7 @@ def lubricants(index=0, lub_name="lubricants", lub_amount=0):
         handle.insert("lubricants", insert_id, str(sales_date[0]), branch_id[0],
                       lubn[index], luba[index])
         real_insert(lubid, index, insert_id)
-    return str(add_array(luba))
+    return str(add_array(luba, index))
 
 
 def prepaid(index=0, prepaid_name="prep", prepaid_amount=0):
@@ -135,7 +135,7 @@ def prepaid(index=0, prepaid_name="prep", prepaid_amount=0):
             handle.insert("prepaid", insert_id, str(sales_date[0]), branch_id[0],
                           prepname[index], prepamount[index])
             real_insert(prepaid_id, index, insert_id)
-        return str(add_array(prepamount))
+        return str(add_array(prepamount, index))
 
 
 def debtors(index=0, debtor="name", debt_taken=0, debt_paid=0):
@@ -155,7 +155,7 @@ def debtors(index=0, debtor="name", debt_taken=0, debt_paid=0):
         handle.insert("debtors", insert_id, str(sales_date[0]), branch_id[0], debtorn[index],
                       taken[index], paid[index])
         real_insert(debtor_id, index, insert_id)
-    return add_array(paid), add_array(taken)
+    return add_array(paid, index), add_array(taken, index)
 
 
 def login(user, password):
@@ -180,6 +180,7 @@ def get_details():
     expense = get_data("expenses", expid)
     debtor = get_data("debtors", debtor_id)
     lubricant = get_data("lubricants", lubid)
+
     return sales, mobile, prep, expense, debtor, lubricant
 
 
@@ -211,9 +212,10 @@ def mobile_money(index, airtel_sending, airtel_withdraw, mtn_sending, mtn_withdr
         real_insert(mobile_id, index, insert_id)
 
 
-def add_array(args):
+def add_array(args, index):
     total = 0
-    for a in args:
+    index += 1
+    for a in args[:index]:
         total += a
     return total
 

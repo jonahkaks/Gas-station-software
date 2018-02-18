@@ -216,6 +216,7 @@ class Sales(Gtk.ApplicationWindow):
         self.lub_name = []
         self.lub_amount = []
         self.lub_total = Gtk.Entry()
+        self.show_all()
         year, month, date = self.calender.get_date()
         real_insert(sales_date, 0, str(date) + "/" + str(month + 1) + "/" + str(year))
         self.changed_day()
@@ -237,64 +238,59 @@ class Sales(Gtk.ApplicationWindow):
         self.changed_day()
 
     def changed_day(self):
-        sales_results = get_details()[0]
-        for i in range(0, len(sales_results), 1):
-            if len(sales_results) == 3:
+        sales_results = get_details()
+        for i in range(0, len(sales_results[0]), 1):
+            if len(sales_results[0]) == 3:
                 self.product_label[i].set_active(2 * i)
             else:
                 self.product_label[i].set_active(i)
-            self.opening_meter[i].set_text(str(sales_results[i][4]))
-            self.closing_meter[i].set_text(str(sales_results[i][5]))
-            self.rtt[i].set_text(str(sales_results[i][6]))
+            self.opening_meter[i].set_text(str(sales_results[0][i][4]))
+            self.closing_meter[i].set_text(str(sales_results[0][i][5]))
+            self.rtt[i].set_text(str(sales_results[0][i][6]))
         try:
-            mobile_results = get_details()[1]
-            self.airtel_sending.set_text(str(mobile_results[0][3]))
-            self.airtel_withdraw.set_text(str(mobile_results[0][4]))
-            self.mtn_sending.set_text(str(mobile_results[0][5]))
-            self.mtn_withdraw.set_text(str(mobile_results[0][6]))
+            self.airtel_sending.set_text(str(sales_results[1][0][3]))
+            self.airtel_withdraw.set_text(str(sales_results[1][0][4]))
+            self.mtn_sending.set_text(str(sales_results[1][0][5]))
+            self.mtn_withdraw.set_text(str(sales_results[1][0][6]))
         except IndexError:
             pass
 
         try:
-            prepaid = get_details()[2]
-            for p in range(0, len(prepaid), 1):
-                self.prep_name[p].set_text(str(prepaid[p][3]))
-                self.prep_amount[p].set_text(str(prepaid[p][4]))
+            for p in range(0, len(sales_results[2]), 1):
+                self.prep_name[p].set_text(str(sales_results[2][p][3]))
+                self.prep_amount[p].set_text(str(sales_results[2][p][4]))
 
         except IndexError:
             pass
 
         try:
-            expense_results = get_details()[3]
-            if len(expense_results) > 0:
-                self.expense_row.set_text(str(len(expense_results)))
+            if len(sales_results[3]) > 0:
+                self.expense_row.set_text(str(len(sales_results[3])))
                 self.expense_rows("wigdet")
-            for ex in range(0, len(expense_results), 1):
-                self.exp_name[ex].set_text(str(expense_results[ex][3]))
-                self.exp[ex].set_text(str(expense_results[ex][4]))
+            for ex in range(0, len(sales_results[3]), 1):
+                self.exp_name[ex].set_text(str(sales_results[3][ex][3]))
+                self.exp[ex].set_text(str(sales_results[3][ex][4]))
 
         except IndexError:
             pass
         try:
-            debtor_results = get_details()[4]
-            if len(debtor_results) > 0:
-                self.debtor_row.set_text(str(len(debtor_results)))
+            if len(sales_results[4]) > 0:
+                self.debtor_row.set_text(str(len(sales_results[4])))
                 self.debtors_rows("wigdet")
-            for d in range(0, len(debtor_results), 1):
-                self.debtor_name[d].set_text(str(debtor_results[d][3]))
-                self.debt_taken[d].set_text(str(debtor_results[d][4]))
-                self.debt_paid[d].set_text(str(debtor_results[d][5]))
+            for d in range(0, len(sales_results[4]), 1):
+                self.debtor_name[d].set_text(str(sales_results[4][d][3]))
+                self.debt_taken[d].set_text(str(sales_results[4][d][4]))
+                self.debt_paid[d].set_text(str(sales_results[4][d][5]))
         except IndexError:
             pass
 
         try:
-            lub_results = get_details()[5]
-            if len(lub_results) > 0:
-                self.lub_row.set_text(str(len(lub_results)))
+            if len(sales_results[5]) > 0:
+                self.lub_row.set_text(str(len(sales_results[5])))
                 self.lubricants_rows("wigdet")
-            for l in range(0, len(lub_results), 1):
-                self.lub_name[l].set_text(str(lub_results[l][3]))
-                self.lub_amount[l].set_text(str(lub_results[l][4]))
+            for l in range(0, len(sales_results[5]), 1):
+                self.lub_name[l].set_text(str(sales_results[5][l][3]))
+                self.lub_amount[l].set_text(str(sales_results[5][l][4]))
         except IndexError:
             pass
 
@@ -340,15 +336,20 @@ class Sales(Gtk.ApplicationWindow):
         """
         Adding the lubricants rows
         """
+        if len(self.lub_name) > 0:
+            for n in range(0, len(self.lub_name), 1):
+                self.grid.remove(self.lub_name[n])
+                self.grid.remove(self.lub_amount[n])
+            self.grid.remove(self.lub_total)
         self.grid.attach(Gtk.Label("Name"), 10, self.y + 20, 1, 1)
         self.grid.attach(Gtk.Label("Amount"), 12, self.y + 20, 1, 1)
         for i in range(0, int(self.lub_row.get_text()), 1):
-            self.lub_name.append(Gtk.Entry())
+            self.lub_name.append(Gtk.Entry.new())
             self.lub_name[i].set_margin_left(20)
             self.lub_name[i].connect("changed", self.lubricants_caller, i)
             self.lub_name[i].set_placeholder_text("Name")
             self.grid.attach(self.lub_name[i], 10, self.y + 22 + 2 * i, 1, 1)
-            self.lub_amount.append(Gtk.Entry())
+            self.lub_amount.append(Gtk.Entry.new())
             self.lub_amount[i].set_placeholder_text("Amount")
             self.lub_amount[i].connect("changed", self.lubricants_caller, i)
             self.grid.attach(self.lub_amount[i], 12, self.y + 22 + 2 * i, 1, 1)
@@ -559,6 +560,11 @@ class Sales(Gtk.ApplicationWindow):
         """
         this function helps to add rows for expenses
         """
+        if len(self.exp_name) > 0:
+            for n in range(0, len(self.exp_name), 1):
+                self.grid.remove(self.exp_name[n])
+                self.grid.remove(self.exp[n])
+            self.grid.remove(self.expense_total)
         self.grid.attach(Gtk.Label("Expense"), 0, self.y + 20, 1, 1)
         self.grid.attach(Gtk.Label("Amount"), 2, self.y + 20, 1, 1)
         for i in range(0, int(self.expense_row.get_text()), 1):
@@ -578,6 +584,13 @@ class Sales(Gtk.ApplicationWindow):
         """
          this is the debtors function for storing the debtors
         """
+        if len(self.debtor_name) > 0:
+            for n in range(0, len(self.debtor_name), 1):
+                self.grid.remove(self.debtor_name[n])
+                self.grid.remove(self.debt_taken[n])
+                self.grid.remove(self.debt_paid[n])
+            self.grid.remove(self.debt_paid_total)
+            self.grid.remove(self.debt_taken_total)
         self.grid.attach(Gtk.Label("Name"), 4, self.y + 20, 1, 1)
         self.grid.attach(Gtk.Label("Debt Taken"), 6, self.y + 20, 1, 1)
         self.grid.attach(Gtk.Label("Debt Paid"), 8, self.y + 20, 1, 1)

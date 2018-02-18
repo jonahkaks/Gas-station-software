@@ -56,5 +56,4 @@ authenticates a user
         self.sales_window.set_title(allowed[0].upper() + " DAY BOOK")
         self.sales_window.set_application(self.get_application())
         self.sales_window.maximize()
-        self.sales_window.show_all()
         self.destroy()
