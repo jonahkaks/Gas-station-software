@@ -1,5 +1,6 @@
 import gi
 
+from calculator import Calc
 from definitions import *
 
 gi.require_version('Gtk', '3.0')
@@ -13,8 +14,29 @@ class Sales(Gtk.ApplicationWindow):
 
     def __init__(self, y, *args, **kwargs):
         super(Sales, self).__init__(*args, **kwargs)
-        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.pms_dp = Gtk.Entry()
+        self.pms_cd = Gtk.Entry()
+        self.pms_od = Gtk.Entry()
+        self.ago_dp = Gtk.Entry()
+        self.ago_cd = Gtk.Entry()
+        self.ago_od = Gtk.Entry()
+        self.bik_dp = Gtk.Entry()
+        self.bik_cd = Gtk.Entry()
+        self.bik_od = Gtk.Entry()
+        self.ago = Gtk.Entry()
+        self.bik_total = Gtk.Entry()
+        self.bik_price = Gtk.Entry()
+        self.bik = Gtk.Entry()
+        self.ago_total = Gtk.Entry()
+        self.ago_price = Gtk.Entry()
+        self.pms_total = Gtk.Entry()
+        self.pms_price = Gtk.Entry()
+        self.pms = Gtk.Entry()
+        self.maximize()
+        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.y = y
+        self.progress = Gtk.Spinner()
+        self.dip_array = []
         self.exp = []
         self.exp_name = []
         self.opening_meter = []
@@ -31,6 +53,8 @@ class Sales(Gtk.ApplicationWindow):
         self.debtor_name = []
         self.prep_name = []
         self.prep_amount = []
+        self.prepnarray = []
+        self.prepaarray = []
         self.airtel_sending = Gtk.Entry()
         self.airtel_withdraw = Gtk.Entry()
         self.mtn_sending = Gtk.Entry()
@@ -69,11 +93,16 @@ class Sales(Gtk.ApplicationWindow):
         self.dips.connect("activate", self.dips_window)
         self.menubar.append(self.dips)
 
+        self.utilities = Gtk.MenuItem("Utilities")
+        self.utilities.connect("activate", self.calculator)
+        self.menubar.append(self.utilities)
+
         self.settings_button = Gtk.MenuItem("Settings")
         self.settings_button.connect("activate", self.settings)
         self.menubar.append(self.settings_button)
 
         self.box.pack_start(self.menubar, False, False, 0)
+        self.box.pack_start(self.progress, False, False, 0)
         self.box.pack_start(self.scrolled, True, True, 0)
 
         self.calender.connect("day-selected", self.day_select)
@@ -113,12 +142,13 @@ class Sales(Gtk.ApplicationWindow):
             self.grid.attach(self.closing_meter[n], 4, 3 + n, 1, 1)
 
             self.rtt.append(Gtk.Entry())
-            self.rtt[n].set_placeholder_text("rtt")
+            self.rtt[n].set_text("0.0")
             self.rtt[n].connect('changed', self.sales_litres_caller, n)
             self.grid.attach(self.rtt[n], 6, 3 + n, 1, 1)
 
             self.litres.append(Gtk.Entry())
             self.litres[n].set_placeholder_text('litres')
+            self.litres[n].connect("changed", self.sales_shs_caller, n)
             self.grid.attach(self.litres[n], 8, 3 + n, 1, 1)
             self.price.append(Gtk.Entry())
             self.price[n].set_placeholder_text("price")
@@ -156,7 +186,7 @@ class Sales(Gtk.ApplicationWindow):
         Adding the cash account
         """
         self.grid.attach(Gtk.Label('Cash'), 4, y + 8, 1, 1)
-        self.grid.attach(Gtk.Label('Bank'), 4, y + 10, 1, 1)
+        self.grid.attach(Gtk.Label('Banked'), 4, y + 10, 1, 1)
         self.cash = Gtk.Entry()
         self.cash.set_placeholder_text("cash")
         self.grid.attach(self.cash, 6, y + 8, 1, 1)
@@ -166,7 +196,7 @@ class Sales(Gtk.ApplicationWindow):
         self.grid.attach(self.bank, 6, y + 10, 1, 1)
 
         self.expense_row = Gtk.Entry()
-        self.expense_row.set_placeholder_text("Enter rows")
+        self.expense_row.set_placeholder_text("Enter expense rows")
 
         """
         Prepaid
@@ -182,37 +212,29 @@ class Sales(Gtk.ApplicationWindow):
         """
         Expenses button here
          """
-        self.expense_button = Gtk.Button(label="Add expense")
-        self.expense_button.set_margin_top(30)
+
         self.expense_row.set_margin_top(30)
-        self.expense_button.connect("clicked", self.expense_rows)
-        self.grid.attach(self.expense_button, 2, y + 18, 1, 1)
-        self.grid.attach(self.expense_row, 0, y + 18, 1, 1)
+        self.expense_row.connect("changed", self.expense_rows)
+        self.grid.attach(self.expense_row, 0, y + 18, 4, 1)
         self.debtor_row = Gtk.Entry()
-        self.debtor_row.set_placeholder_text("Enter rows")
+        self.debtor_row.set_placeholder_text("Enter number of debtor rows")
         """
         Adding the debtors rows is done here
         """
-        self.debtor_button = Gtk.Button(label="Add Debtors")
-        self.debtor_button.connect("clicked", self.debtors_rows)
+        self.debtor_row.connect("changed", self.debtors_rows)
         self.debtor_row.set_margin_top(30)
         self.debtor_row.set_margin_left(20)
-        self.debtor_button.set_margin_top(30)
-        self.grid.attach(self.debtor_row, 4, y + 18, 1, 1)
-        self.grid.attach(self.debtor_button, 6, y + 18, 1, 1)
+        self.grid.attach(self.debtor_row, 4, y + 18, 6, 1)
 
         """
         Adding the lubricants area
         """
         self.lub_row = Gtk.Entry()
-        self.lub_row.set_placeholder_text("Add row")
+        self.lub_row.set_placeholder_text("Enter Lubricant rows")
         self.lub_row.set_margin_top(30)
         self.lub_row.set_margin_left(20)
-        self.lub_button = Gtk.Button(label="Lubricants")
-        self.lub_button.set_margin_top(30)
-        self.lub_button.connect("clicked", self.lubricants_rows)
-        self.grid.attach(self.lub_row, 10, y + 18, 1, 1)
-        self.grid.attach(self.lub_button, 12, y + 18, 1, 1)
+        self.lub_row.connect("changed", self.lubricants_rows)
+        self.grid.attach(self.lub_row, 10, y + 18, 4, 1)
         self.lub_name = []
         self.lub_amount = []
         self.lub_total = Gtk.Entry()
@@ -227,6 +249,10 @@ class Sales(Gtk.ApplicationWindow):
                 mobile_money(0, self.airtel_sending.get_text(), self.airtel_withdraw.get_text(),
                              self.mtn_sending.get_text(), self.mtn_withdraw.get_text())
 
+    def calculator(self, widget):
+        cal = Calc("Calculator", self)
+        cal.show_all()
+
     def day_select(self, widget):
         """
          this function is for getting and storing a date
@@ -234,65 +260,96 @@ class Sales(Gtk.ApplicationWindow):
 
         year, month, date = self.calender.get_date()
         real_insert(sales_date, 0, str(date) + "/" + str(month + 1) + "/" + str(year))
-
         self.changed_day()
 
     def changed_day(self):
+        self.progress.start()
         sales_results = get_details()
-        for i in range(0, len(sales_results[0]), 1):
-            if len(sales_results[0]) == 3:
-                self.product_label[i].set_active(2 * i)
-            else:
+        if len(sales_results[0]) == 3:
+            for g in range(0, len(sales_results[0]), 1):
+                self.product_label[g].set_active(2 * g)
+                self.opening_meter[g].set_text(str(sales_results[0][g][4]))
+                self.closing_meter[g].set_text(str(sales_results[0][g][5]))
+                self.rtt[g].set_text(str(sales_results[0][g][6]))
+        elif len(sales_results[0]) > 3:
+            for h in range(0, len(sales_results[0]), 1):
+                self.product_label[h].set_active(h)
+                self.opening_meter[h].set_text(str(sales_results[0][h][4]))
+                self.closing_meter[h].set_text(str(sales_results[0][h][5]))
+                self.rtt[h].set_text(str(sales_results[0][h][6]))
+        elif len(sales_results[0]) == 0:
+            for i in range(0, len(sales_results[0]), 1):
                 self.product_label[i].set_active(i)
-            self.opening_meter[i].set_text(str(sales_results[0][i][4]))
-            self.closing_meter[i].set_text(str(sales_results[0][i][5]))
-            self.rtt[i].set_text(str(sales_results[0][i][6]))
-        try:
+                self.opening_meter[i].set_text("")
+                self.closing_meter[i].set_text("")
+                self.rtt[i].set_text("")
+                self.show_all()
+
+        if len(sales_results[1]) > 0:
             self.airtel_sending.set_text(str(sales_results[1][0][3]))
             self.airtel_withdraw.set_text(str(sales_results[1][0][4]))
             self.mtn_sending.set_text(str(sales_results[1][0][5]))
             self.mtn_withdraw.set_text(str(sales_results[1][0][6]))
-        except IndexError:
-            pass
+        elif len(sales_results[1]) == 0:
+            self.airtel_sending.set_text("")
+            self.airtel_withdraw.set_text("")
+            self.mtn_sending.set_text("")
+            self.mtn_withdraw.set_text("")
 
-        try:
+        self.prepnarray.clear()
+        self.prepaarray.clear()
+        if len(sales_results[2]) > 0:
             for p in range(0, len(sales_results[2]), 1):
-                self.prep_name[p].set_text(str(sales_results[2][p][3]))
-                self.prep_amount[p].set_text(str(sales_results[2][p][4]))
+                real_insert(self.prepnarray, p, sales_results[2][p][3])
+                real_insert(self.prepaarray, p, sales_results[2][p][4])
+                self.prepaid.set_text(str(add_array(self.prepaarray, p)))
+        else:
+            self.prepaid.set_text("")
 
-        except IndexError:
-            pass
-
-        try:
-            if len(sales_results[3]) > 0:
-                self.expense_row.set_text(str(len(sales_results[3])))
-                self.expense_rows("wigdet")
+        if len(sales_results[3]) > 0:
+            self.expense_row.set_text(str(len(sales_results[3])))
             for ex in range(0, len(sales_results[3]), 1):
                 self.exp_name[ex].set_text(str(sales_results[3][ex][3]))
                 self.exp[ex].set_text(str(sales_results[3][ex][4]))
-
-        except IndexError:
-            pass
-        try:
-            if len(sales_results[4]) > 0:
-                self.debtor_row.set_text(str(len(sales_results[4])))
-                self.debtors_rows("wigdet")
+        elif len(sales_results[3]) == 0:
+            self.expense_row.set_text("")
+        if len(sales_results[4]) > 0:
+            self.debtor_row.set_text(str(len(sales_results[4])))
             for d in range(0, len(sales_results[4]), 1):
                 self.debtor_name[d].set_text(str(sales_results[4][d][3]))
                 self.debt_taken[d].set_text(str(sales_results[4][d][4]))
                 self.debt_paid[d].set_text(str(sales_results[4][d][5]))
-        except IndexError:
-            pass
+        elif len(sales_results[4]) == 0:
+            self.debtor_row.set_text("")
 
-        try:
-            if len(sales_results[5]) > 0:
-                self.lub_row.set_text(str(len(sales_results[5])))
-                self.lubricants_rows("wigdet")
+        if len(sales_results[5]) > 0:
+            self.lub_row.set_text(str(len(sales_results[5])))
             for l in range(0, len(sales_results[5]), 1):
                 self.lub_name[l].set_text(str(sales_results[5][l][3]))
                 self.lub_amount[l].set_text(str(sales_results[5][l][4]))
-        except IndexError:
-            pass
+        elif len(sales_results[5]) == 0:
+            self.lub_row.set_text("")
+
+        if len(sales_results[6]) > 0:
+            real_insert(self.dip_array, 0, sales_results[6][0][3])
+            real_insert(self.dip_array, 1, sales_results[6][0][4])
+            real_insert(self.dip_array, 2, sales_results[6][0][5])
+            real_insert(self.dip_array, 3, sales_results[6][0][6])
+            real_insert(self.dip_array, 4, sales_results[6][0][7])
+            real_insert(self.dip_array, 5, sales_results[6][0][8])
+        elif len(sales_results[6]) == 0:
+            self.dip_array.clear()
+
+        if len(sales_results[7]) > 0:
+            self.cash.set_text(str(sales_results[7][0][3]))
+            self.bank.set_text(str(sales_results[7][0][4]))
+        elif len(sales_results[7]) == 0:
+            self.cash.set_text("")
+            self.bank.set_text("")
+        self.stop_spinner()
+
+    def stop_spinner(self):
+        self.progress.stop()
 
     def add_prepaid_details(self, widget):
         prep_window = Gtk.Dialog("Prepaid", self, Gtk.DialogFlags.MODAL, (Gtk.STOCK_CANCEL,
@@ -311,17 +368,21 @@ class Sales(Gtk.ApplicationWindow):
         for i in range(0, 5, 1):
             self.prep_name.append(Gtk.Entry())
             self.prep_name[i].set_margin_left(20)
-            self.prep_name[i].connect("changed", self.prepaid_caller, i)
             self.prep_name[i].set_placeholder_text("Name")
+            self.prep_name[i].connect("changed", self.prepaid_caller, i)
             grid.attach(self.prep_name[i], 0, 4 + 2 * i, 1, 1)
             self.prep_amount.append(Gtk.Entry())
             self.prep_amount[i].set_placeholder_text("Amount")
             self.prep_amount[i].connect("changed", self.prepaid_caller, i)
             grid.attach(self.prep_amount[i], 2, 4 + 2 * i, 1, 1)
+            try:
+                self.prep_name[i].set_text(self.prepnarray[i])
+                self.prep_amount[i].set_text(str(self.prepaarray[i]))
+            except IndexError:
+                pass
         prep_window.show_all()
         response = prep_window.run()
         if response == Gtk.ResponseType.OK:
-
             print("The OK button was clicked")
         elif response == Gtk.ResponseType.CANCEL:
             cancel("prepaid")
@@ -331,6 +392,12 @@ class Sales(Gtk.ApplicationWindow):
         if len(self.prep_name[choice].get_text()) and len(self.prep_amount[choice].get_text()) > 0:
             self.prepaid.set_text(prepaid(choice, self.prep_name[choice].get_text()
                                           , self.prep_amount[choice].get_text()))
+            real_insert(self.prepnarray, choice, self.prep_name[choice].get_text())
+            real_insert(self.prepaarray, choice, self.prep_amount[choice].get_text())
+
+    def cash_caller(self, widget):
+        if len(self.cash.get_text()) and len(self.bank.get_text()) > 0:
+            cash(0, self.cash.get_text(), self.bank.get_text())
 
     def lubricants_rows(self, widget):
         """
@@ -343,19 +410,22 @@ class Sales(Gtk.ApplicationWindow):
             self.grid.remove(self.lub_total)
         self.grid.attach(Gtk.Label("Name"), 10, self.y + 20, 1, 1)
         self.grid.attach(Gtk.Label("Amount"), 12, self.y + 20, 1, 1)
-        for i in range(0, int(self.lub_row.get_text()), 1):
-            self.lub_name.append(Gtk.Entry.new())
-            self.lub_name[i].set_margin_left(20)
-            self.lub_name[i].connect("changed", self.lubricants_caller, i)
-            self.lub_name[i].set_placeholder_text("Name")
-            self.grid.attach(self.lub_name[i], 10, self.y + 22 + 2 * i, 1, 1)
-            self.lub_amount.append(Gtk.Entry.new())
-            self.lub_amount[i].set_placeholder_text("Amount")
-            self.lub_amount[i].connect("changed", self.lubricants_caller, i)
-            self.grid.attach(self.lub_amount[i], 12, self.y + 22 + 2 * i, 1, 1)
-        self.lub_total.set_placeholder_text("Total")
-        self.grid.attach(self.lub_total, 12, self.y + 22 + 2 * (int(self.lub_row.get_text()) + 1), 1, 1)
-        self.show_all()
+        try:
+            for i in range(0, int(self.lub_row.get_text()), 1):
+                self.lub_name.append(Gtk.Entry.new())
+                self.lub_name[i].set_margin_left(20)
+                self.lub_name[i].connect("changed", self.lubricants_caller, i)
+                self.lub_name[i].set_placeholder_text("Name")
+                self.grid.attach(self.lub_name[i], 10, self.y + 22 + 2 * i, 1, 1)
+                self.lub_amount.append(Gtk.Entry.new())
+                self.lub_amount[i].set_placeholder_text("Amount")
+                self.lub_amount[i].connect("changed", self.lubricants_caller, i)
+                self.grid.attach(self.lub_amount[i], 12, self.y + 22 + 2 * i, 1, 1)
+            self.lub_total.set_placeholder_text("Total")
+            self.grid.attach(self.lub_total, 12, self.y + 22 + 2 * (int(self.lub_row.get_text()) + 1), 1, 1)
+            self.show_all()
+        except ValueError:
+            pass
 
     def lubricants_caller(self, widget, choice):
         if len(self.lub_name[choice].get_text()) and len(self.lub_amount[choice].get_text()) > 0:
@@ -405,57 +475,69 @@ class Sales(Gtk.ApplicationWindow):
 
         grid.attach(Gtk.Label("PMS"), 2, 2, 1, 1)
 
-        pms_od = Gtk.Entry()
-        pms_od.set_placeholder_text("opening dips")
-        pms_cd = Gtk.Entry()
-        pms_cd.set_placeholder_text("closing dips")
-        pms_dp = Gtk.Entry()
-        pms_dp.set_placeholder_text("difference")
+        self.pms_od.set_placeholder_text("opening dips")
+        self.pms_cd.set_placeholder_text("closing dips")
+        self.pms_dp.set_placeholder_text("difference")
         dips_total = Gtk.Entry()
 
-        grid.attach(pms_od, 4, 2, 1, 1)
-        pms_cd.connect('changed', lambda widget: pms_dp.set_text(dips(0,
-                                                                      pms_od.get_text(),
-                                                                      pms_cd.get_text())))
-        pms_dp.connect("changed", lambda widget: dips_total.set_text(pms_dp.get_text()))
-        grid.attach(pms_cd, 6, 2, 1, 1)
+        grid.attach(self.pms_od, 4, 2, 1, 1)
+        self.pms_od.connect('changed', lambda widget:
+        self.pms_dp.set_text(str(float(self.pms_od.get_text()) - float(self.pms_cd.get_text()))))
+        self.pms_cd.connect("changed", lambda widget:
+        self.pms_dp.set_text(str(float(self.pms_od.get_text()) - float(self.pms_cd.get_text()))))
+        self.pms_dp.connect("changed", lambda widget: dips_total.set_text(
+            float(self.pms_dp.get_text()) + float(self.ago_dp.get_text()) +
+            float(self.bik_dp.get_text())))
+        grid.attach(self.pms_cd, 6, 2, 1, 1)
 
-        grid.attach(pms_dp, 8, 2, 1, 1)
+        grid.attach(self.pms_dp, 8, 2, 1, 1)
 
         grid.attach(Gtk.Label("AGO"), 2, 4, 1, 1)
-        ago_od = Gtk.Entry()
-        ago_od.set_placeholder_text("opening dips")
-        ago_cd = Gtk.Entry()
-        ago_cd.set_placeholder_text("closing dips")
-        ago_dp = Gtk.Entry()
-        grid.attach(ago_od, 4, 4, 1, 1)
-        ago_cd.connect('changed',
-                       lambda widget: ago_dp.set_text(dips(1, ago_od.get_text(), ago_cd.get_text())))
-        ago_dp.connect("changed",
-                       lambda widget: dips_total.set_text(str(int(dips_total.get_text()) + int(ago_dp.get_text()))))
-        grid.attach(ago_cd, 6, 4, 1, 1)
-        grid.attach(ago_dp, 8, 4, 1, 1)
+        self.ago_od.set_placeholder_text("opening dips")
+        self.ago_cd.set_placeholder_text("closing dips")
+        self.ago_dp.set_placeholder_text("difference")
+        grid.attach(self.ago_od, 4, 4, 1, 1)
+        self.ago_od.connect('changed', lambda widget:
+        self.ago_dp.set_text(str(float(self.ago_od.get_text()) - float(self.ago_cd.get_text()))))
+        self.ago_cd.connect("changed", lambda widget:
+        self.ago_dp.set_text(str(float(self.ago_od.get_text()) - float(self.ago_cd.get_text()))))
+        self.ago_dp.connect("changed", lambda widget: dips_total.set_text(
+            float(self.pms_dp.get_text()) + float(self.ago_dp.get_text()) +
+            float(self.bik_dp.get_text())))
+        grid.attach(self.ago_cd, 6, 4, 1, 1)
+        grid.attach(self.ago_dp, 8, 4, 1, 1)
 
         grid.attach(Gtk.Label("BIK"), 2, 6, 1, 1)
-        bik_od = Gtk.Entry()
-        bik_cd = Gtk.Entry()
-        bik_dp = Gtk.Entry()
+        self.bik_od.set_placeholder_text("opening_dips")
+        self.bik_cd.set_placeholder_text("closing_dips")
+        self.bik_dp.set_placeholder_text("difference")
 
-        grid.attach(bik_od, 4, 6, 1, 1)
-
-        bik_cd.connect('changed', lambda widget: bik_dp.set_text(dips(2,
-                                                                      bik_od.get_text(),
-                                                                      bik_cd.get_text())))
-        bik_dp.connect("changed", lambda widget: dips_total.set_text(str(int(dips_total.get_text()) +
-                                                                         int(bik_dp.get_text()))))
-        grid.attach(bik_cd, 6, 6, 1, 1)
-        grid.attach(bik_dp, 8, 6, 1, 1)
+        grid.attach(self.bik_od, 4, 6, 1, 1)
+        self.bik_od.connect('changed', lambda widget:
+        self.bik_dp.set_text(str(float(self.bik_od.get_text()) - float(self.bik_cd.get_text()))))
+        self.bik_cd.connect('changed', lambda widget:
+        self.bik_dp.set_text(str(float(self.bik_od.get_text()) - float(self.bik_cd.get_text()))))
+        self.bik_dp.connect("changed", lambda widget: dips_total.set_text(
+            float(self.pms_dp.get_text()) + float(self.ago_dp.get_text()) +
+            float(self.bik_dp.get_text())))
+        grid.attach(self.bik_cd, 6, 6, 1, 1)
+        grid.attach(self.bik_dp, 8, 6, 1, 1)
         grid.attach(dips_total, 8, 8, 1, 1)
+        try:
+            self.pms_od.set_text(str(self.dip_array[0]))
+            self.pms_cd.set_text(str(self.dip_array[1]))
+            self.ago_od.set_text(str(self.dip_array[2]))
+            self.ago_cd.set_text(str(self.dip_array[3]))
+            self.bik_od.set_text(str(self.dip_array[4]))
+            self.bik_cd.set_text(str(self.dip_array[5]))
+            dips_total.set_text(str(add_array(self.totaldips, 2)))
+        except IndexError:
+            pass
         dip_window.show_all()
 
         response = dip_window.run()
         if response == Gtk.ResponseType.OK:
-            print("The OK button was clicked")
+            self.dips_caller()
         elif response == Gtk.ResponseType.CANCEL:
             cancel("dips")
         dip_window.destroy()
@@ -478,54 +560,45 @@ class Sales(Gtk.ApplicationWindow):
         grid.attach(Gtk.Label("Amount"), 8, 0, 1, 1)
         grid.attach(Gtk.Label("PMS"), 2, 2, 1, 1)
         total = Gtk.Entry()
-        pms = Gtk.Entry()
-        pms_price = Gtk.Entry()
-        pms_total = Gtk.Entry()
-        pms.set_placeholder_text("litres")
-        grid.attach(pms, 4, 2, 1, 1)
-        pms_price.set_placeholder_text("price")
-        pms_price.connect('changed',
-                          lambda widget:
-                          pms_total.set_text(str(int(pms.get_text()) * int(pms_price.get_text()))))
-        grid.attach(pms_price, 6, 2, 1, 1)
-        pms_total.set_placeholder_text("total")
-        pms_total.connect("changed", lambda widget: total.set_text(str(int(pms_total.get_text()))))
-        grid.attach(pms_total, 8, 2, 1, 1)
+        self.pms.set_placeholder_text("litres")
+        grid.attach(self.pms, 4, 2, 1, 1)
+        self.pms_price.set_placeholder_text("price")
+        self.pms_price.connect('changed',
+                               lambda widget:
+                               self.pms_total.set_text(str(int(self.pms.get_text()) * int(self.pms_price.get_text()))))
+        grid.attach(self.pms_price, 6, 2, 1, 1)
+        self.pms_total.set_placeholder_text("total")
+        self.pms_total.connect("changed", lambda widget: total.set_text(str(int(self.pms_total.get_text()))))
+        grid.attach(self.pms_total, 8, 2, 1, 1)
 
         grid.attach(Gtk.Label("AGO"), 2, 4, 1, 1)
-        ago = Gtk.Entry()
-        ago_price = Gtk.Entry()
-        ago_total = Gtk.Entry()
-        ago.set_placeholder_text("litres")
-        grid.attach(ago, 4, 4, 1, 1)
-        ago_price.connect('changed',
-                          lambda widget:
-                          ago_total.set_text(str(int(ago.get_text()) * int(ago_price.get_text()))))
-        ago_price.set_placeholder_text("price")
-        grid.attach(ago_price, 6, 4, 1, 1)
-        ago_total.set_placeholder_text("total")
-        ago_total.connect("changed", lambda widget: total.set_text(str(int(total.get_text()) +
-                                                                       int(ago_total.get_text()))))
+        self.ago.set_placeholder_text("litres")
+        grid.attach(self.ago, 4, 4, 1, 1)
+        self.ago_price.connect('changed',
+                               lambda widget:
+                               self.ago_total.set_text(str(int(self.ago.get_text()) * int(self.ago_price.get_text()))))
+        self.ago_price.set_placeholder_text("price")
+        grid.attach(self.ago_price, 6, 4, 1, 1)
+        self.ago_total.set_placeholder_text("total")
+        self.ago_total.connect("changed", lambda widget: total.set_text(str(int(total.get_text()) +
+                                                                            int(self.ago_total.get_text()))))
 
-        grid.attach(ago_total, 8, 4, 1, 1)
+        grid.attach(self.ago_total, 8, 4, 1, 1)
 
         grid.attach(Gtk.Label("BIK"), 2, 6, 1, 1)
-        bik = Gtk.Entry()
-        bik_price = Gtk.Entry()
-        bik_total = Gtk.Entry()
-        bik.set_placeholder_text("litres")
-        grid.attach(bik, 4, 6, 1, 1)
+        self.bik.set_placeholder_text("litres")
+        grid.attach(self.bik, 4, 6, 1, 1)
 
-        bik_price.set_placeholder_text("price")
-        bik_price.connect('changed',
-                          lambda widget:
-                          bik_total.set_text(str(int(bik.get_text()) * int(bik_price.get_text()))))
-        grid.attach(bik_price, 6, 6, 1, 1)
+        self.bik_price.set_placeholder_text("price")
+        self.bik_price.connect('changed',
+                               lambda widget:
+                               self.bik_total.set_text(str(int(self.bik.get_text()) * int(self.bik_price.get_text()))))
+        grid.attach(self.bik_price, 6, 6, 1, 1)
 
-        bik_total.set_placeholder_text("total")
-        bik_total.connect("changed", lambda widget: total.set_text(str(int(total.get_text()) +
-                                                                       int(bik_total.get_text()))))
-        grid.attach(bik_total, 8, 6, 1, 1)
+        self.bik_total.set_placeholder_text("total")
+        self.bik_total.connect("changed", lambda widget: total.set_text(str(int(total.get_text()) +
+                                                                            int(self.bik_total.get_text()))))
+        grid.attach(self.bik_total, 8, 6, 1, 1)
         total.set_placeholder_text("total")
         grid.attach(total, 8, 8, 1, 1)
 
@@ -533,28 +606,35 @@ class Sales(Gtk.ApplicationWindow):
 
         response = fuel_window.run()
         if response == Gtk.ResponseType.OK:
-            print("The OK button was clicked")
+            self.fuel_purchase_caller()
         elif response == Gtk.ResponseType.CANCEL:
             cancel("fuel-purchases")
         fuel_window.close()
+
+    def dips_caller(self, widget):
+        if len(self.pms_od.get_text()) and len(self.pms_cd.get_text()) and \
+                len(self.ago_od.get_text()) and len(self.ago_cd.get_text()) \
+                and len(self.bik_od.get_text()) and len(self.bik_cd.get_text()) > 0:
+            dips(self.pms_od.get_text(), self.pms_cd.get_text(), self.ago_od.get_text(),
+                 self.ago_cd.get_text(), self.bik_od.get_text(), self.bik_cd.get_text())
+
+    def fuel_purchase_caller(self, widget):
+        if len(self.pms.get_text()) and len(self.pms_price.get_text()) and \
+                len(self.ago.get_text()) and len(self.ago_price.get_text()) \
+                and len(self.bik.get_text()) and len(self.bik_price.get_text()) > 0:
+            fuel_purchase(self.pms.get_text(), self.pms_price.get_text(), self.ago.get_text(),
+                          self.ago_price.get_text(), self.bik.get_text(), self.bik_price.get_text())
 
     def product_change(self, combo, k):
         """
         this function is for storing the selected product into an array
         """
-        if len(sales_date) == 0:
-            dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO,
-                                       Gtk.ButtonsType.OK, "Please Select a date")
-            dialog.run()
-            dialog.destroy()
-        else:
-            global model
-            tree_iter = combo.get_active_iter()
-            if tree_iter is not None:
-                model = combo.get_model()
-
-            real_insert(self.product_changed, k, model[tree_iter][0])
-            self.sales_litres_caller(combo, k)
+        global model
+        tree_iter = combo.get_active_iter()
+        if tree_iter is not None:
+            model = combo.get_model()
+        real_insert(self.product_changed, k, model[tree_iter][0])
+        self.sales_litres_caller(combo, k)
 
     def expense_rows(self, widget):
         """
@@ -567,18 +647,21 @@ class Sales(Gtk.ApplicationWindow):
             self.grid.remove(self.expense_total)
         self.grid.attach(Gtk.Label("Expense"), 0, self.y + 20, 1, 1)
         self.grid.attach(Gtk.Label("Amount"), 2, self.y + 20, 1, 1)
-        for i in range(0, int(self.expense_row.get_text()), 1):
-            self.exp_name.append(Gtk.Entry())
-            self.exp_name[i].connect("changed", self.expense_caller, i)
-            self.exp_name[i].set_placeholder_text("Expense")
-            self.grid.attach(self.exp_name[i], 0, self.y + 22 + 2 * i, 1, 1)
-            self.exp.append(Gtk.Entry())
-            self.exp[i].set_placeholder_text("Amount")
-            self.exp[i].connect("changed", self.expense_caller, i)
-            self.grid.attach(self.exp[i], 2, self.y + 22 + 2 * i, 1, 1)
-        self.expense_total.set_placeholder_text("Total")
-        self.grid.attach(self.expense_total, 2, self.y + 22 + 2 * (int(self.expense_row.get_text()) + 1), 1, 1)
-        self.show_all()
+        try:
+            for i in range(0, int(self.expense_row.get_text()), 1):
+                self.exp_name.append(Gtk.Entry())
+                self.exp_name[i].connect("changed", self.expense_caller, i)
+                self.exp_name[i].set_placeholder_text("Expense")
+                self.grid.attach(self.exp_name[i], 0, self.y + 22 + 2 * i, 1, 1)
+                self.exp.append(Gtk.Entry())
+                self.exp[i].set_placeholder_text("Amount")
+                self.exp[i].connect("changed", self.expense_caller, i)
+                self.grid.attach(self.exp[i], 2, self.y + 22 + 2 * i, 1, 1)
+            self.expense_total.set_placeholder_text("Total")
+            self.grid.attach(self.expense_total, 2, self.y + 22 + 2 * (int(self.expense_row.get_text()) + 1), 1, 1)
+            self.show_all()
+        except ValueError:
+            pass
 
     def debtors_rows(self, widget):
         """
@@ -595,31 +678,34 @@ class Sales(Gtk.ApplicationWindow):
         self.grid.attach(Gtk.Label("Debt Taken"), 6, self.y + 20, 1, 1)
         self.grid.attach(Gtk.Label("Debt Paid"), 8, self.y + 20, 1, 1)
 
-        for i in range(0, int(self.debtor_row.get_text()), 1):
-            self.debtor_name.append(Gtk.Entry())
-            self.debtor_name[i].set_placeholder_text("Debtor")
-            self.debtor_name[i].connect("changed", self.debtor_caller, i)
-            self.debtor_name[i].set_margin_left(20)
-            self.grid.attach(self.debtor_name[i], 4, self.y + 22 + 2 * i, 1, 1)
+        try:
+            for i in range(0, int(self.debtor_row.get_text()), 1):
+                self.debtor_name.append(Gtk.Entry())
+                self.debtor_name[i].set_placeholder_text("Debtor")
+                self.debtor_name[i].connect("changed", self.debtor_caller, i)
+                self.debtor_name[i].set_margin_left(20)
+                self.grid.attach(self.debtor_name[i], 4, self.y + 22 + 2 * i, 1, 1)
 
-            self.debt_taken.append(Gtk.Entry())
-            self.debt_taken[i].set_placeholder_text("Debt")
-            self.debt_taken[i].connect("changed", self.debtor_caller, i)
-            self.grid.attach(self.debt_taken[i], 6, self.y + 22 + 2 * i, 1, 1)
+                self.debt_taken.append(Gtk.Entry())
+                self.debt_taken[i].set_placeholder_text("Debt")
+                self.debt_taken[i].connect("changed", self.debtor_caller, i)
+                self.grid.attach(self.debt_taken[i], 6, self.y + 22 + 2 * i, 1, 1)
 
-            self.debt_paid.append(Gtk.Entry())
-            self.debt_paid[i].set_placeholder_text("Paid")
-            self.debt_paid[i].connect("changed", self.debtor_caller, i)
-            self.grid.attach(self.debt_paid[i], 8, self.y + 22 + 2 * i, 1, 1)
+                self.debt_paid.append(Gtk.Entry())
+                self.debt_paid[i].set_placeholder_text("Paid")
+                self.debt_paid[i].connect("changed", self.debtor_caller, i)
+                self.grid.attach(self.debt_paid[i], 8, self.y + 22 + 2 * i, 1, 1)
 
-        self.debt_taken_total.set_placeholder_text("Debt_taken")
-        self.grid.attach(self.debt_taken_total,
-                         6, self.y + 22 + 2 * (int(self.debtor_row.get_text()) + 1),
-                         1, 1)
-        self.debt_paid_total.set_placeholder_text("Paid_debt")
-        self.grid.attach(self.debt_paid_total, 8
-                         , self.y + 22 + 2 * (int(self.debtor_row.get_text()) + 1), 1, 1)
-        self.show_all()
+            self.debt_taken_total.set_placeholder_text("Debt_taken")
+            self.grid.attach(self.debt_taken_total,
+                             6, self.y + 22 + 2 * (int(self.debtor_row.get_text()) + 1),
+                             1, 1)
+            self.debt_paid_total.set_placeholder_text("Paid_debt")
+            self.grid.attach(self.debt_paid_total, 8
+                             , self.y + 22 + 2 * (int(self.debtor_row.get_text()) + 1), 1, 1)
+            self.show_all()
+        except ValueError:
+            pass
 
     def debtor_caller(self, widget, choice):
         """
@@ -666,23 +752,9 @@ class Sales(Gtk.ApplicationWindow):
             self.amount[choice].set_text(result[0])
             self.total_amount.set_text(result[1])
 
-    @staticmethod
-    def replace_widget(old, new):
-        parent = old.get_parent()
-
-        props = {}
-        for key in Gtk.ContainerClass.list_child_properties(type(parent)):
-            props[key.name] = parent.child_get_property(old, key.name)
-
-        parent.remove(old)
-        parent.add(new)
-
-        for name, value in props.iteritems():
-            parent.child_set_property(new, name, value)
-
     def save(self, widget):
         dialog = Gtk.Dialog("Sales Summary", self, Gtk.DialogFlags.MODAL, (Gtk.STOCK_OK, Gtk.ResponseType.OK))
-        dialog.set_position(Gtk.WindowPosition.CENTER);
+        dialog.set_position(Gtk.WindowPosition.CENTER)
         dialog.set_default_size(500, 500)
         label = Gtk.Label()
         label.set_text("totalsales:" + str(self.total_amount.get_text()) + "\n"

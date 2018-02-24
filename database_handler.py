@@ -9,12 +9,12 @@ with sqlite3.connect(db_path) as conn:
     cur = conn.cursor()
 
 
-def insert(table, *args):
+def hinsert(table, *args):
     cur.execute("INSERT OR IGNORE INTO " + table + " VALUES" + str(args))
     conn.commit()
 
 
-def select(operation, table, condition1, condition2):
+def hselect(operation, table, condition1, condition2):
     try:
         cur.execute("SELECT " + operation + " FROM " + table + condition1 + condition2)
         return cur.fetchall()
@@ -22,11 +22,11 @@ def select(operation, table, condition1, condition2):
         print("failed to fetch data" + "\n")
 
 
-def update(table, field, condition):
+def hupdate(table, field, condition):
     cur.execute("UPDATE  " + table + " SET " + field + " WHERE " + condition)
     conn.commit()
 
 
-def delete(table, date):
+def hdelete(table, date):
     cur.execute("DELETE FROM " + table + " WHERE date='" + date + "'")
     conn.commit()
