@@ -1,16 +1,15 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-import sqlite3
-
-from accounting import *
 from calculator import Calc
+from accounting import *
+from settings import Settings
+from purchases import *
 from dips import *
 from double_entry import *
-from purchases import *
-from settings import Settings
+import sqlite3
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 
 
 class Sales(Gtk.ApplicationWindow):
@@ -36,6 +35,7 @@ class Sales(Gtk.ApplicationWindow):
         self.scrollable_tree_list.add(self.tree)
         self.tree.connect("row-activated", self.menu_caller)
         self.tree.connect("button-press-event", self.right_clicked)
+        self.accounts()
         self.opening_meter = []
         self.closing_meter = []
         self.rtt = []
@@ -151,19 +151,19 @@ class Sales(Gtk.ApplicationWindow):
     def sales_litres_caller(self, widget, choice):
 
         if len(self.product_label[choice].get_label()) and len(
-                self.opening_meter[choice].get_text()) and \
-                len(self.closing_meter[choice].get_text()) and \
-                len(self.rtt[choice].get_text()) > 0:
+                self.opening_meter[choice].get_text().replace(",", "")) and \
+                len(self.closing_meter[choice].get_text().replace(",", "")) and \
+                len(self.rtt[choice].get_text().replace(",", "")) > 0:
             self.litres[choice].set_text(sales_litres(choice, self.product_label[choice].get_label(),
-                                                      self.opening_meter[choice].get_text(),
-                                                      self.closing_meter[choice].get_text(),
-                                                      self.rtt[choice].get_text()))
+                                                      self.opening_meter[choice].get_text().replace(",", ""),
+                                                      self.closing_meter[choice].get_text().replace(",", ""),
+                                                      self.rtt[choice].get_text().replace(",", "")))
 
     def sales_shs_caller(self, widget, choice):
-        if len(self.litres[choice].get_text()) and len(
-                self.price[choice].get_text()) > 0:
+        if len(self.litres[choice].get_text().replace(",", "")) and len(
+                self.price[choice].get_text().replace(",", "")) > 0:
             result = sales_shs(choice, self.litres[choice].get_text(),
-                               self.price[choice].get_text())
+                               self.price[choice].get_text().replace(",", ""))
             self.amount[choice].set_text(thousand_separator(str(result[0])))
             self.total_amount.set_text(thousand_separator(str(result[1])))
 
@@ -266,30 +266,24 @@ class Sales(Gtk.ApplicationWindow):
             try:
                 it = self.account_list.append(None,
                                               [account, account,
-                                               "{0}".format(thousand_separator(hselect("SUM(debit-credit)", account,
-                                                                                       "WHERE date='{0}'".format(
-                                                                                           sales_date[0]),
-                                                                                       "AND branchid = '{0}'".format(
-                                                                                           branch_id[0]))[0][0]))])
-                n = hselect("id, name", "subaccounts", "WHERE account_id={0}".format(ids), "")
-                arr = []
-                for i in range(0, len(n), 1):
-                    total = hselect("SUM(debit-credit)", n[i][1], "WHERE date='{0}'".format(sales_date[0]),
-                                    "AND branchid = '{0}'".format(branch_id[0]))
-                    arr.append((n[i][0], n[i][1], n[i][1], thousand_separator(str(total[0][0]))))
-
-                for i in range(0, len(arr), 1):
-                    its = self.account_list.append(it, arr[i][1:])
-                    k = hselect("name", "sub_subaccounts", "WHERE subaccount_id={0}".format(arr[i][0]), "")
-                    sub_accounts = []
-                    for j in range(0, len(k), 1):
-                        tot = hselect("SUM(debit-credit)", k[j][0], "WHERE date='{0}'".format(sales_date[0]),
-                                      "AND branchid = '{0}'".format(branch_id[0]))
-                        sub_accounts.append((k[j][0], k[j][0], thousand_separator(str(tot[0][0]))))
-                    for n in range(0, len(sub_accounts), 1):
-                        self.account_list.append(its, sub_accounts[n])
-            except:
+                                               "{0}".format(hselect("SUM(debit-credit)", account, "", "")[0][0])])
+                arr = hselect("name, description, '1000'", "subaccounts",
+                               "WHERE account_id={0}".format(ids), "")
+            except IndexError:
                 it = self.account_list.append(None, [account, account, '0'])
+
+                arr = hselect("name, description, '0'", "subaccounts",
+                               "WHERE account_id={0}".format(ids), "")
+            print(arr)
+            for i in range(0, len(arr), 1):
+                its = self.account_list.append(it, arr[i])
+
+                sub_accounts = hselect("name, description, '0'", "sub_subaccounts",
+                                       "WHERE subaccount_id={0}".format(hselect("id", "subaccounts",
+                                                                                "WHERE name='{0}'".format(arr[i][0]),
+                                                                                "")[0][0]), "")
+                for n in range(0, len(sub_accounts), 1):
+                    self.account_list.append(its, sub_accounts[n])
 
     def top_menu_caller(self, widget, name):
         if name == "cash":
@@ -314,11 +308,9 @@ class Sales(Gtk.ApplicationWindow):
                                                                 Gtk.STOCK_OK, Gtk.ResponseType.OK))
 
     def changed_day(self, widget):
-        year, month, day = self.calender.get_date()
-        real_insert(sales_date, 0, '{0:04d}-{1:02d}-{2:02d}'.format(year, month + 1, day))
+        year, month, date = self.calender.get_date()
+        real_insert(sales_date, 0, "{0}/{1}/{2}".format(str(date), str(month + 1), str(year)))
         sales_results = get_details()
-        self.account_list.clear()
-        self.accounts()
 
         if len(sales_results) > 0:
             for hs in range(0, len(sales_results), 1):
@@ -329,6 +321,7 @@ class Sales(Gtk.ApplicationWindow):
 
         elif len(sales_results) == 0:
             for i in range(0, len(self.opening_meter), 1):
+                self.product_label[i].set_label("")
                 self.opening_meter[i].set_text("")
                 self.closing_meter[i].set_text("")
                 self.rtt[i].set_text("")

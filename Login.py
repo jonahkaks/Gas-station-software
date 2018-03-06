@@ -51,7 +51,7 @@ authenticates a user
             self.label.set_markup("<span color=\'red\'><b><i>Invalid login try again</i></b></span>")
             self.show_all()
             return 0
-        self.sales_window = Sales(allowed[1])
+        self.sales_window = Sales(eval(allowed[1]))
         self.sales_window.set_title(allowed[0].upper() + " DAY BOOK")
         self.sales_window.set_application(self.get_application())
         self.destroy()

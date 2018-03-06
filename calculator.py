@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 # Copyright (C) 2018 jonahk
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,10 +18,6 @@ from gi.repository import Gtk
 
 
 class Calc(Gtk.Dialog):
-    """
-      this is the main application control logic where all the windows take in
-    """
-
     def __init__(self, *args):
         Gtk.Dialog.__init__(self, *args)
         self.box = self.get_content_area()
@@ -89,6 +87,7 @@ class Calc(Gtk.Dialog):
         self.button18 = Gtk.Button(label="Del")
         self.button18.connect("clicked", self.empty)
         self.grid.attach(self.button18, 4, 5, 1, 1)
+        self.show_all()
 
     def get_label(self, widget):
         self.store.append(widget.get_label())
@@ -105,7 +104,7 @@ class Calc(Gtk.Dialog):
             self.store.append(self.ans)
             self.entry.set_text(result + "=" + self.store[0])
 
-        except:
+        except ArithmeticError:
             self.entry.set_text("Error")
             return 0
 

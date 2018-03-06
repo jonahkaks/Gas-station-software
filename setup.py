@@ -9,5 +9,4 @@ setup(
     license='MIT',
     author='root',
     author_email='jjkafeero@gmail.com',
-    description='An accounting software for gas stations'
-)
+    description='An accounting software for gas stations')
