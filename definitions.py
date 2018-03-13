@@ -1,4 +1,5 @@
 import locale
+import sqlite3
 
 from database_handler import *
 
@@ -14,10 +15,6 @@ sales_date = []
 details_array = []
 debit_array = []
 credit_array = []
-dips_id = []
-fuel_id = []
-purchases_id = []
-top_id = []
 assets_id = []
 liabilities_id = []
 expenses_id = []
@@ -32,38 +29,19 @@ def real_insert(arr, index, value):
         arr.insert(index, value)
 
 
-try:
-    args = hselect("name", "subaccounts", "", "")
-    arg = hselect("name", "sub_subaccounts", "", "")
-    arr = args + arg
-    for n in range(0, len(arr), 1):
-        t = arr[n][0].lower() + "_id"
-        globals()[t] = []
-except IndexError:
-    print("c")
-
-
-def sales_litres(index=0, product="product", opening_stock=0, closing_stock=0, rtt=0):
+def sales_litres(product_id=0, product="product", opening_stock=0, closing_stock=0, rtt=0):
     opening_stock = float(opening_stock)
     closing_stock = float(closing_stock)
     rtt = float(rtt)
-    real_insert(pro, index, product)
-    real_insert(op, index, opening_stock)
-    real_insert(cl, index, closing_stock)
-    real_insert(rt, index, rtt)
-    try:
-        field = "product='" + pro[index] + "', " + "opening_meter='" + str(op[index]) + "'," \
-                + "closing_meter='" + str(cl[index]) + "'," + \
-                "rtt='" + str(rt[index]) + "'"
-        condition = "fuelid=" + str(fuel_id[index])
-        hupdate("fuel", field, condition)
-    except IndexError:
-        insert_id = hselect("Max(id)", "fuel", "", "")[0][0]
-        insert_id += 1
-        hinsert("fuel", insert_id, branch_id[0], str(sales_date[0]), pro[index],
-                op[index], cl[index], rt[index])
-        real_insert(fuel_id, index, insert_id)
-    return str(closing_stock - (opening_stock + rtt))
+    if product_id:
+        field = "product='{0}', opening_meter={1},closing_meter={2}," \
+                "rtt={3}".format(product, opening_stock, closing_stock, rtt)
+        hupdate("fuel", field, "fuelid={0}".format(product_id))
+        insert_id = product_id
+    else:
+        insert_id = hinsert("fuel", "branchid, date, product, opening_meter, closing_meter, rtt",
+                            branch_id[0], str(sales_date[0]), product, opening_stock, closing_stock, rtt)
+    return str(closing_stock - (opening_stock + rtt)), insert_id
 
 
 def sales_shs(index=0, litres=0, price=0):
@@ -75,7 +53,7 @@ def sales_shs(index=0, litres=0, price=0):
     return amount_array[index], add_array(amount_array, index)
 
 
-def dips(pms_od=0, pms_cd=0, ago_od=0, ago_cd=0, bik_od=0, bik_cd=0):
+def dips(dips_id, pms_od=0, pms_cd=0, ago_od=0, ago_cd=0, bik_od=0, bik_cd=0):
     pms_od = float(pms_od)
     pms_cd = float(pms_cd)
     ago_od = float(ago_od)
@@ -84,42 +62,36 @@ def dips(pms_od=0, pms_cd=0, ago_od=0, ago_cd=0, bik_od=0, bik_cd=0):
     bik_cd = float(bik_cd)
 
     try:
-        field = "pms_od='" + str(pms_od) + "',pms_cd='" + str(pms_cd) + "',ago_od='" + str(ago_od) + \
-                "',ago_cd='" + str(ago_cd) + "',bik_od='" + str(bik_od) + "',bik_cd='" + str(bik_cd) + "'"
-        condition = "id=" + str(dips_id[0])
-        hupdate("dips", field, condition)
-    except IndexError:
-        insert_id = hselect("Max(id)", "dips", "", "")[0][0]
-        insert_id += 1
-        hinsert("dips", insert_id, branch_id[0], str(sales_date[0]),
-                pms_od, pms_cd, ago_od, ago_cd, bik_od, bik_cd)
-        real_insert(dips_id, 0, insert_id)
-    return pms_od - pms_cd, ago_od - ago_cd, bik_od - bik_cd
+        field = "pms_od={0},pms_cd={1},ago_od={2}," \
+                "ago_cd={3},bik_od={4}," \
+                "bik_cd={5}".format(pms_od, pms_cd, ago_od, ago_cd, bik_od, bik_cd)
+
+        hupdate("dips", field, "id={0}".format(dips_id))
+        insert_id = dips_id
+    except sqlite3.OperationalError:
+        insert_id = hinsert("dips", "branchid, date, pms_od, pms_cd, ago_od, ago_cd, bik_od, bik_cd",
+                            branch_id[0], str(sales_date[0]),
+                            pms_od, pms_cd, ago_od, ago_cd, bik_od, bik_cd)
+    return str(pms_od - pms_cd), str(ago_od - ago_cd), str(bik_od - bik_cd), insert_id
 
 
-def insertion(arr, table, index, details, debit, credit):
+def insertion(table, position, index, details, debit, credit):
     debit = float(debit)
     credit = float(credit)
     real_insert(details_array, index, details)
     real_insert(debit_array, index, debit)
     real_insert(credit_array, index, credit)
+
     try:
-        field = "details='{0}', debit='{1}', credit='{2}'".format(details_array[index],
-                                                                  str(debit_array[index]),
-                                                                  str(credit_array[index]))
-
-        condition = "id={0}".format(str(arr[index]))
-        hupdate(table, field, condition)
-    except IndexError:
-        insert_id = hselect("Max(id)", table, "", "")[0][0]
-        if insert_id is None:
-            insert_id = 0
-        insert_id += 1
-        hinsert(table, insert_id, str(sales_date[0]), branch_id[0],
-                details_array[index], debit_array[index], credit_array[index])
-        real_insert(arr, index, insert_id)
-
-    return str(add_array(debit_array, index)), str(add_array(credit_array, index))
+        field = "details='{0}', debit={1}, credit={2}".format(details_array[index],
+                                                              debit_array[index],
+                                                              credit_array[index])
+        hupdate(table, field, "id={0}".format(position))
+        insert_id = position
+    except sqlite3.OperationalError:
+        insert_id = hinsert(table, "date, branchid, details, debit, credit", str(sales_date[0]), branch_id[0],
+                            details_array[index], debit_array[index], credit_array[index])
+    return str(add_array(debit_array, index)), str(add_array(credit_array, index)), insert_id
 
 
 def login(user, password):
@@ -133,17 +105,9 @@ def login(user, password):
         return 0
 
 
-def get_details():
-    sales = get_data("fuel", fuel_id)
-    return sales
-
-
-def get_data(table, arr):
+def get_data(table):
     result = hselect("*", table, " WHERE branchid=" + str(branch_id[0]),
                      " AND date='" + sales_date[0] + "'")
-    print(result)
-    for i in range(0, len(result), 1):
-        real_insert(arr, i, result[i][0])
     return result
 
 
@@ -155,7 +119,7 @@ def add_array(args, index):
     return total
 
 
-def fuel_purchase(pms, pms_price, ago, ago_price, bik, bik_price):
+def fuel_purchase(index, pms, pms_price, ago, ago_price, bik, bik_price):
     pms = int(pms)
     pms_price = float(pms_price)
     ago = int(ago)
@@ -164,18 +128,15 @@ def fuel_purchase(pms, pms_price, ago, ago_price, bik, bik_price):
     bik_price = float(bik_price)
 
     try:
-        field = "pms='" + str(pms) + "',pms_price='" + str(pms_price) + \
-                "',ago='" + str(ago) + \
-                "',ago_price='" + str(ago_price) + \
-                "',bik='" + str(bik) + "',bik_price='" + str(bik_price) + "'"
-        condition = "id=" + str(purchases_id[0])
-        hupdate("fuel_purchases", field, condition)
-    except IndexError:
-        insert_id = hselect("Max(id)", "fuel_purchases", "", "")[0][0]
-        insert_id += 1
-        hinsert("fuel_purchases", insert_id, str(sales_date[0]), branch_id[0],
-                pms, pms_price, ago, ago_price, bik, bik_price)
-        real_insert(purchases_id, 0, insert_id)
+        field = "pms={0},pms_price={1},ago={2},ago_price={3}," \
+                "bik={4},bik_price={5}".format(pms, pms_price, ago, ago_price, bik, bik_price)
+        hupdate("fuel_purchases", field, "id={0}".format(index))
+        insert_id = index
+    except sqlite3.OperationalError:
+        insert_id = hinsert("fuel_purchases", "date, branchid, pms, pms_price, ago, ago_price, bik, bik_price",
+                            str(sales_date[0]), branch_id[0],
+                            pms, pms_price, ago, ago_price, bik, bik_price)
+    return insert_id
 
 
 def thousand_separator(data):

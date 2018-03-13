@@ -13,7 +13,7 @@ import sys
 
 import gi
 
-import Login
+from Login import Login
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib, Gio
@@ -24,6 +24,10 @@ MENU_XML = """
     <menu id="app-menu">
         <section>
             <item>
+                <attribute name="action">app.new</attribute>
+                <attribute name="label" translatable="yes">_New</attribute>
+            </item>
+            <item>
                 <attribute name="action">app.about</attribute>
                 <attribute name="label" translatable="yes">_About</attribute>
             </item>
@@ -32,9 +36,12 @@ MENU_XML = """
                 <attribute name="label" translatable="yes">_Help</attribute>
             </item>
             <item>
+                <attribute name="action">app.commandline</attribute>
+                <attribute name="label" translatable="yes">_CommandLine</attribute>
+            </item>
+            <item>
                 <attribute name="action">app.quit</attribute>
                 <attribute name="label" translatable="yes">_Quit</attribute>
-                <attribute name="accel">&lt;Primary&gt;q</attribute>
             </item>
         </section>
     </menu>
@@ -65,11 +72,17 @@ class Application(Gtk.Application):
         """
         this application function is used to activate the login window when the app is started
         """
-        if not self.window:
-            self.window = Login.Login()
-            self.window.set_title("Login")
-            self.window.set_application(self)
-            self.window.show_all()
+
+        self.window = Login()
+        self.window.set_title("Login")
+        self.window.set_application(self)
+        self.window.show_all()
+
+    def new_window(self, action, param):
+        self.window = Login()
+        self.window.set_title("Login")
+        self.window.set_application(self)
+        self.window.show_all()
 
     def do_startup(self):
         """
@@ -77,8 +90,14 @@ class Application(Gtk.Application):
 
         """
         Gtk.Application.do_startup(self)
+        action = Gio.SimpleAction.new("new", None)
+        action.connect("activate", self.new_window)
+        self.add_action(action)
         action = Gio.SimpleAction.new("about", None)
         action.connect("activate", self.on_about)
+        self.add_action(action)
+        action = Gio.SimpleAction.new("commandline", None)
+        action.connect("activate", self.commands)
         self.add_action(action)
         action = Gio.SimpleAction.new("help", None)
         action.connect("activate", self.on_help)
@@ -123,6 +142,16 @@ class Application(Gtk.Application):
             print("Test argument recieved")
         self.activate()
         return 0
+
+    def commands(self, param, action):
+        while 1:
+            k = input("Enter a command:")
+            if k == "quit":
+                return 0
+            elif k == "chat":
+                print("time to chat")
+
+
 
     def on_quit(self, action, param):
         """

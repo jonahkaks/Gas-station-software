@@ -9,9 +9,12 @@ with sqlite3.connect(db_path) as conn:
     cur = conn.cursor()
 
 
-def hinsert(table, *args):
-    cur.execute("INSERT OR IGNORE INTO {0} VALUES{1}".format(table, args))
+def hinsert(table, table_headers, *args):
+    print("INSERT OR IGNORE INTO {0}({1}) VALUES{2}".format(table, table_headers, args))
+    cur.execute("INSERT OR IGNORE INTO {0}({1}) VALUES{2}".format(table, table_headers, args))
     conn.commit()
+    print(cur.lastrowid)
+    return cur.lastrowid
 
 
 def hselect(operation, table, condition1, condition2):
@@ -31,17 +34,24 @@ def hcreate(table, sql):
 
 
 def hupdate(table, field, condition):
+    print("UPDATE  {0} SET {1} WHERE {2}".format(table, field, condition))
     cur.execute("UPDATE  {0} SET {1} WHERE {2}".format(table, field, condition))
     conn.commit()
 
 
 def hdelete(table, condition):
-    print("DELETE FROM {0} WHERE {1}".format(table, condition))
     cur.execute("DELETE FROM {0} WHERE {1}".format(table, condition))
     conn.commit()
 
 
 def hdrop(table):
-    print("DROP TABLE '{0}'".format(table))
     cur.execute("DROP TABLE '{0}'".format(table))
+    conn.commit()
+
+
+def insert_trigger(table, super_table):
+    cur.execute("CREATE TRIGGER {0}_log AFTER INSERT ON {1} BEGIN "
+                "INSERT INTO {2}(date, branchid, debit, credit, details)"
+                " SELECT date, branchid, debit, credit, '{1}'"
+                " FROM {1} WHERE id=(SELECT MAX(id) FROM {1}); END;".format(table.lower(), table, super_table))
     conn.commit()

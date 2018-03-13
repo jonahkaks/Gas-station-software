@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-import sqlite3
 
 from accounting import *
 from calculator import Calc
@@ -44,7 +43,7 @@ class Sales(Gtk.ApplicationWindow):
         self.amount = []
         self.expense_total = Gtk.Entry()
         self.product_label = []
-        self.product_changed = []
+        self.product_id = []
         self.set_border_width(10)
         self.grid = Gtk.Grid(column_spacing=0, row_spacing=0)
         self.scrolled = Gtk.ScrolledWindow()
@@ -111,22 +110,25 @@ class Sales(Gtk.ApplicationWindow):
         self.grid.attach(Gtk.Label('Amount'), 12, 2, 1, 1)
 
         for n in range(0, len(y), 1):
+            self.product_id.append("")
             self.product_label.append(Gtk.Button(label=y[n]))
             self.grid.attach(self.product_label[n], 0, 3 + n, 2, 1)
 
             self.opening_meter.append(Gtk.Entry())
             self.opening_meter[n].set_placeholder_text('opening meter')
-            self.opening_meter[n].connect('changed', self.sales_litres_caller, n)
+            self.opening_meter[n].connect('focus-out-event', self.sales_litres_caller, n)
+            self.opening_meter[n].connect('changed', self.subtraction, n)
             self.grid.attach(self.opening_meter[n], 2, 3 + n, 1, 1)
 
             self.closing_meter.append(Gtk.Entry())
             self.closing_meter[n].set_placeholder_text('closing meter')
-            self.closing_meter[n].connect('changed', self.sales_litres_caller, n)
+            self.closing_meter[n].connect('focus-out-event', self.sales_litres_caller, n)
+            self.closing_meter[n].connect('changed', self.subtraction, n)
             self.grid.attach(self.closing_meter[n], 4, 3 + n, 1, 1)
 
             self.rtt.append(Gtk.Entry())
-            self.rtt[n].set_text("0.0")
-            self.rtt[n].connect('changed', self.sales_litres_caller, n)
+            self.rtt[n].connect('focus-out-event', self.sales_litres_caller, n)
+            self.rtt[n].connect('changed', self.subtraction, n)
             self.grid.attach(self.rtt[n], 6, 3 + n, 1, 1)
 
             self.litres.append(Gtk.Entry())
@@ -148,16 +150,19 @@ class Sales(Gtk.ApplicationWindow):
 
         self.changed_day("calender")
 
-    def sales_litres_caller(self, widget, choice):
+    def sales_litres_caller(self, event, widget, choice):
 
         if len(self.product_label[choice].get_label()) and len(
                 self.opening_meter[choice].get_text()) and \
                 len(self.closing_meter[choice].get_text()) and \
                 len(self.rtt[choice].get_text()) > 0:
-            self.litres[choice].set_text(sales_litres(choice, self.product_label[choice].get_label(),
-                                                      self.opening_meter[choice].get_text(),
-                                                      self.closing_meter[choice].get_text(),
-                                                      self.rtt[choice].get_text()))
+            result = sales_litres(self.product_id[choice],
+                                  self.product_label[choice].get_label(),
+                                  self.opening_meter[choice].get_text(),
+                                  self.closing_meter[choice].get_text(),
+                                  self.rtt[choice].get_text())
+            self.litres[choice].set_text(result[0])
+            real_insert(self.product_id, choice, result[1])
 
     def sales_shs_caller(self, widget, choice):
         if len(self.litres[choice].get_text()) and len(
@@ -170,9 +175,10 @@ class Sales(Gtk.ApplicationWindow):
     def menu_caller(self, widget, row, col):
         model = widget.get_model()
         name = model[row][0]
-        DoubleEntry(name, self, Gtk.DialogFlags.MODAL, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                                        Gtk.STOCK_OK, Gtk.ResponseType.OK))
         self.account_list.clear()
+        DoubleEntry(name, self, Gtk.DialogFlags.MODAL,
+                    (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
+
         self.accounts()
 
     def right_clicked(self, widget, event):
@@ -194,22 +200,24 @@ class Sales(Gtk.ApplicationWindow):
         if method == "r":
             try:
                 hdelete("subaccounts", "name='{0}'".format(row))
+                hdrop(row)
                 hdrop(hselect("name", "accounts", "WHERE id={0}".format(hselect("account_id",
                                                                                 "subaccounts",
                                                                                 "WHERE name='{0}".format(row),
                                                                                 "")[0][0]), "")[0][0])
-                hdrop(row)
-
             except sqlite3.OperationalError:
-                print("no table")
+                hdelete("sub_subaccounts", "name='{0}'".format(row))
+                print("row")
             self.accounts()
         elif method == "a":
             subac = Gtk.Entry()
             subac.set_placeholder_text("child account")
             desc = Gtk.Entry()
             desc.set_placeholder_text("description")
-            dialog = Gtk.Dialog("Enter field", self, Gtk.DialogFlags.MODAL, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                                                             Gtk.STOCK_OK, Gtk.ResponseType.OK))
+            dialog = Gtk.Dialog("Enter field", self,
+                                Gtk.DialogFlags.MODAL, (Gtk.STOCK_OK,
+                                                        Gtk.ResponseType.OK,
+                                                        Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
 
             box = dialog.get_content_area()
 
@@ -230,30 +238,28 @@ class Sales(Gtk.ApplicationWindow):
 
             response = dialog.run()
             if response == Gtk.ResponseType.OK and row in accounts:
-                id = hselect("Max(id)", "subaccounts", "", "")[0][0]
-                if id is None:
-                    id = 0
                 category = hselect("id", "accounts",
                                    "WHERE name='{0}'".format(row), "")[0][0]
-                hinsert("subaccounts", id + 1, branch_id[0], category, subac.get_text(),
+                hinsert("subaccounts", "branchid, account_id, name, description", branch_id[0], category,
+                        subac.get_text(),
                         desc.get_text())
                 hcreate(row, "'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'date' TEXT, " +
-                        "'branchid' INTEGER,'account' TEXT, 'debit' REAL,'credit' REAL")
+                        "'branchid' INTEGER,'details' TEXT,'debit' REAL,'credit' REAL")
                 hcreate(subac.get_text(), "'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'date' TEXT, " +
                         "'branchid' INTEGER,'details' TEXT, 'debit' REAL,'credit' REAL")
+                insert_trigger(subac.get_text(), row)
 
                 self.accounts()
             elif response == Gtk.ResponseType.OK and row in subaccounts:
-                id = hselect("Max(id)", "sub_subaccounts", "", "")[0][0]
-                if id is None:
-                    id = 0
                 category = hselect("id", "subaccounts",
                                    "WHERE name='{0}'".format(row), "")[0][0]
-                hinsert("sub_subaccounts", id + 1, branch_id[0], category, subac.get_text(),
+                hinsert("sub_subaccounts", "branchid,subaccount_id, name, description",
+                        branch_id[0], category, subac.get_text(),
                         desc.get_text())
                 hcreate(subac.get_text(), "'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'date' TEXT, " +
                         "'branchid' INTEGER,'details' TEXT, 'debit' REAL,'credit' REAL")
                 self.accounts()
+                insert_trigger(subac.get_text(), row)
 
             elif response == Gtk.ResponseType.CANCEL:
                 print("canceled")
@@ -271,21 +277,24 @@ class Sales(Gtk.ApplicationWindow):
                                                                                            sales_date[0]),
                                                                                        "AND branchid = '{0}'".format(
                                                                                            branch_id[0]))[0][0]))])
-                n = hselect("id, name", "subaccounts", "WHERE account_id={0}".format(ids), "")
+                n = hselect("id, name, description", "subaccounts", "WHERE account_id={0}".format(ids),
+                            "AND branchid={0}".format(branch_id[0]))
                 arr = []
                 for i in range(0, len(n), 1):
                     total = hselect("SUM(debit-credit)", n[i][1], "WHERE date='{0}'".format(sales_date[0]),
                                     "AND branchid = '{0}'".format(branch_id[0]))
-                    arr.append((n[i][0], n[i][1], n[i][1], thousand_separator(str(total[0][0]))))
+                    arr.append((n[i][0], n[i][1], n[i][2], thousand_separator(str(total[0][0]))))
 
                 for i in range(0, len(arr), 1):
                     its = self.account_list.append(it, arr[i][1:])
-                    k = hselect("name", "sub_subaccounts", "WHERE subaccount_id={0}".format(arr[i][0]), "")
+                    k = hselect("name, description", "sub_subaccounts",
+                                "WHERE subaccount_id={0}".format(arr[i][0]),
+                                "AND branchid={0}".format(branch_id[0]))
                     sub_accounts = []
                     for j in range(0, len(k), 1):
                         tot = hselect("SUM(debit-credit)", k[j][0], "WHERE date='{0}'".format(sales_date[0]),
-                                      "AND branchid = '{0}'".format(branch_id[0]))
-                        sub_accounts.append((k[j][0], k[j][0], thousand_separator(str(tot[0][0]))))
+                                      "AND branchid = {0}".format(branch_id[0]))
+                        sub_accounts.append((k[j][0], k[j][1], thousand_separator(str(tot[0][0]))))
                     for n in range(0, len(sub_accounts), 1):
                         self.account_list.append(its, sub_accounts[n])
             except:
@@ -316,22 +325,33 @@ class Sales(Gtk.ApplicationWindow):
     def changed_day(self, widget):
         year, month, day = self.calender.get_date()
         real_insert(sales_date, 0, '{0:04d}-{1:02d}-{2:02d}'.format(year, month + 1, day))
-        sales_results = get_details()
-        self.account_list.clear()
-        self.accounts()
+        sales_results = get_data("fuel")
 
         if len(sales_results) > 0:
             for hs in range(0, len(sales_results), 1):
-                self.product_label[hs].set_label(str(sales_results[hs][3]))
+                real_insert(self.product_id, hs, sales_results[hs][0])
                 self.opening_meter[hs].set_text(str(sales_results[hs][4]))
                 self.closing_meter[hs].set_text(str(sales_results[hs][5]))
                 self.rtt[hs].set_text(str(sales_results[hs][6]))
 
         elif len(sales_results) == 0:
             for i in range(0, len(self.opening_meter), 1):
+                real_insert(self.product_id, i, "")
                 self.opening_meter[i].set_text("")
                 self.closing_meter[i].set_text("")
-                self.rtt[i].set_text("")
+                self.rtt[i].set_text("0.0")
                 self.litres[i].set_text("")
                 self.price[i].set_text("")
+        self.account_list.clear()
+        self.accounts()
         self.show_all()
+
+    def subtraction(self, widget, choice):
+        try:
+            opening_stock = float(self.opening_meter[choice].get_text())
+            closing_stock = float(self.closing_meter[choice].get_text())
+            rtt = float(self.rtt[choice].get_text())
+            result = str(closing_stock - (opening_stock + rtt))
+            self.litres[choice].set_text(result)
+        except ValueError:
+            pass

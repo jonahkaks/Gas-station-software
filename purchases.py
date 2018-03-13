@@ -12,7 +12,13 @@ class FuelPurchase(Gtk.Dialog):
         Gtk.Dialog.__init__(self, *args)
         self.set_default_size(600, 400)
         self.set_border_width(40)
-        self.purchase_array = get_data("fuel_purchases", purchases_id)
+        self.purchase_id = ""
+        self.purchase_array = []
+        try:
+            self.purchase_array = get_data("fuel_purchases")[0]
+            self.purchase_id = self.purchase_array[0]
+        except IndexError:
+            pass
         self.ago = Gtk.Entry()
         self.bik_total = Gtk.Entry()
         self.bik_price = Gtk.Entry()
@@ -80,12 +86,12 @@ class FuelPurchase(Gtk.Dialog):
         grid.attach(total, 8, 8, 1, 1)
 
         try:
-            self.pms.set_text(str(self.purchase_array[0]))
-            self.pms_price.set_text(str(self.purchase_array[1]))
-            self.ago.set_text(str(self.purchase_array[2]))
-            self.ago_price.set_text(str(self.purchase_array[3]))
-            self.bik.set_text(str(self.purchase_array[4]))
-            self.bik_price.set_text(str(self.purchase_array[5]))
+            self.pms.set_text(str(self.purchase_array[3]))
+            self.pms_price.set_text(str(self.purchase_array[4]))
+            self.ago.set_text(str(self.purchase_array[5]))
+            self.ago_price.set_text(str(self.purchase_array[6]))
+            self.bik.set_text(str(self.purchase_array[7]))
+            self.bik_price.set_text(str(self.purchase_array[8]))
         except IndexError:
             pass
 
@@ -103,16 +109,10 @@ class FuelPurchase(Gtk.Dialog):
                 len(self.ago.get_text().replace(",", "")) and len(self.ago_price.get_text().replace(",", "")) \
                 and len(self.bik.get_text().replace(",", "")) and \
                 len(self.bik_price.get_text().replace(",", "")) > 0:
-            real_insert(self.purchase_array, 0, self.pms.get_text().replace(",", ""))
-            real_insert(self.purchase_array, 1, self.pms_price.get_text().replace(",", ""))
-            real_insert(self.purchase_array, 2, self.ago.get_text().replace(",", ""))
-            real_insert(self.purchase_array, 3, self.ago_price.get_text().replace(",", ""))
-            real_insert(self.purchase_array, 4, self.bik.get_text().replace(",", ""))
-            real_insert(self.purchase_array, 5, self.bik_price.get_text().replace(",", ""))
-
-            fuel_purchase(self.pms.get_text(), self.pms_price.get_text(), self.ago.get_text(),
-                          self.ago_price.get_text(), self.bik.get_text(),
-                          self.bik_price.get_text().replace(",", ""))
+            self.purchase_id = fuel_purchase(self.purchase_id, self.pms.get_text(),
+                                             self.pms_price.get_text(), self.ago.get_text(),
+                                             self.ago_price.get_text(), self.bik.get_text(),
+                                             self.bik_price.get_text().replace(",", ""))
 
 
 class Lubricants(Gtk.Dialog):

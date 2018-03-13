@@ -10,7 +10,13 @@ class FuelDips(Gtk.Dialog):
 
     def __init__(self, *args):
         Gtk.Dialog.__init__(self, *args)
-        self.dip_array = get_data("dips", dips_id)
+        self.dips_id = ""
+        self.dip_array = []
+        try:
+            self.dip_array = get_data("dips")[0]
+            self.dips_id = self.dip_array[0]
+        except IndexError:
+            pass
         self.pms_dp = Gtk.Entry()
         self.pms_cd = Gtk.Entry()
         self.pms_od = Gtk.Entry()
@@ -88,12 +94,12 @@ class FuelDips(Gtk.Dialog):
         grid.attach(self.pms_dp, 8, 2, 1, 1)
         grid.attach(Gtk.Label("AGO"), 2, 4, 1, 1)
         try:
-            self.pms_od.set_text(str(self.dip_array[0]))
-            self.pms_cd.set_text(str(self.dip_array[1]))
-            self.ago_od.set_text(str(self.dip_array[2]))
-            self.ago_cd.set_text(str(self.dip_array[3]))
-            self.bik_od.set_text(str(self.dip_array[4]))
-            self.bik_cd.set_text(str(self.dip_array[5]))
+            self.pms_od.set_text(str(self.dip_array[3]))
+            self.pms_cd.set_text(str(self.dip_array[4]))
+            self.ago_od.set_text(str(self.dip_array[5]))
+            self.ago_cd.set_text(str(self.dip_array[6]))
+            self.bik_od.set_text(str(self.dip_array[7]))
+            self.bik_cd.set_text(str(self.dip_array[8]))
         except IndexError:
             pass
         self.show_all()
@@ -109,13 +115,11 @@ class FuelDips(Gtk.Dialog):
         if len(self.pms_od.get_text()) and len(self.pms_cd.get_text()) and \
                 len(self.ago_od.get_text()) and len(self.ago_cd.get_text()) \
                 and len(self.bik_od.get_text()) and len(self.bik_cd.get_text()) > 0:
-            real_insert(self.dip_array, 0, self.pms_od.get_text())
-            real_insert(self.dip_array, 1, self.pms_cd.get_text())
-            real_insert(self.dip_array, 2, self.ago_od.get_text())
-            real_insert(self.dip_array, 3, self.ago_cd.get_text())
-            real_insert(self.dip_array, 4, self.bik_od.get_text())
-            real_insert(self.dip_array, 5, self.bik_cd.get_text())
-            dips(self.pms_od.get_text(), self.pms_cd.get_text(),
-                 self.ago_od.get_text(),
-                 self.ago_cd.get_text(), self.bik_od.get_text()
-                 , self.bik_cd.get_text())
+            results = dips(self.dips_id, self.pms_od.get_text(), self.pms_cd.get_text(),
+                           self.ago_od.get_text(),
+                           self.ago_cd.get_text(), self.bik_od.get_text()
+                           , self.bik_cd.get_text())
+            self.pms_dp.set_text(results[0])
+            self.ago_dp.set_text(results[1])
+            self.bik_dp.set_text(results[2])
+            self.dips_id = results[3]
