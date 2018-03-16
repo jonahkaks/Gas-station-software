@@ -10,10 +10,8 @@ with sqlite3.connect(db_path) as conn:
 
 
 def hinsert(table, table_headers, *args):
-    print("INSERT OR IGNORE INTO {0}({1}) VALUES{2}".format(table, table_headers, args))
     cur.execute("INSERT OR IGNORE INTO {0}({1}) VALUES{2}".format(table, table_headers, args))
     conn.commit()
-    print(cur.lastrowid)
     return cur.lastrowid
 
 
@@ -34,7 +32,6 @@ def hcreate(table, sql):
 
 
 def hupdate(table, field, condition):
-    print("UPDATE  {0} SET {1} WHERE {2}".format(table, field, condition))
     cur.execute("UPDATE  {0} SET {1} WHERE {2}".format(table, field, condition))
     conn.commit()
 
@@ -51,7 +48,14 @@ def hdrop(table):
 
 def insert_trigger(table, super_table):
     cur.execute("CREATE TRIGGER {0}_log AFTER INSERT ON {1} BEGIN "
-                "INSERT INTO {2}(date, branchid, debit, credit, details)"
-                " SELECT date, branchid, debit, credit, '{1}'"
-                " FROM {1} WHERE id=(SELECT MAX(id) FROM {1}); END;".format(table.lower(), table, super_table))
+                "INSERT INTO {2}(date, uuid, branchid, debit, credit, details)"
+                " SELECT date, id, branchid, debit, credit, '{1}'"
+                " FROM {1} WHERE id=(SELECT MAX(id) "
+                "FROM {1});END;".format(table.lower(), table, super_table))
+    conn.commit()
+
+    cur.execute("CREATE TRIGGER {0}_update_log AFTER UPDATE ON {1} BEGIN "
+                "UPDATE {2} SET debit=(SELECT debit FROM {1}), "
+                "credit=(SELECT credit FROM {1}) WHERE uuid={0}+(SELECT MAX(id) FROM {1});END;"
+                "".format(table.lower(), table, super_table))
     conn.commit()

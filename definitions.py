@@ -1,5 +1,4 @@
 import locale
-import sqlite3
 
 from database_handler import *
 
@@ -15,11 +14,6 @@ sales_date = []
 details_array = []
 debit_array = []
 credit_array = []
-assets_id = []
-liabilities_id = []
-expenses_id = []
-incomes_id = []
-arrays = []
 
 
 def real_insert(arr, index, value):
@@ -29,28 +23,37 @@ def real_insert(arr, index, value):
         arr.insert(index, value)
 
 
-def sales_litres(product_id=0, product="product", opening_stock=0, closing_stock=0, rtt=0):
+def sales_litres(product_id=0, index=0, product="product", opening_stock=0, closing_stock=0, rtt=0, price=0):
     opening_stock = float(opening_stock)
     closing_stock = float(closing_stock)
     rtt = float(rtt)
+    price = int(price)
+    litres = closing_stock - (opening_stock + rtt)
+    amount = litres * price
+    real_insert(pr, index, price)
+    real_insert(amount_array, index, amount)
     if product_id:
         field = "product='{0}', opening_meter={1},closing_meter={2}," \
                 "rtt={3}".format(product, opening_stock, closing_stock, rtt)
         hupdate("fuel", field, "fuelid={0}".format(product_id))
+        hupdate("Stock_litres", "details='{0}',credit={1}".format(product,
+                                                                  litres), "uuid={0}".format(product_id))
+        hupdate("Stock", "details='{0}',credit={1}".format(product,
+                                                           amount), "uuid={0}".format(product_id))
+        hupdate("Cash", "details='{0}',credit={1}".format(product,
+                                                          amount), "uuid={0}".format(product_id))
         insert_id = product_id
     else:
         insert_id = hinsert("fuel", "branchid, date, product, opening_meter, closing_meter, rtt",
-                            branch_id[0], str(sales_date[0]), product, opening_stock, closing_stock, rtt)
-    return str(closing_stock - (opening_stock + rtt)), insert_id
-
-
-def sales_shs(index=0, litres=0, price=0):
-    price = int(price)
-    litres = float(litres)
-    real_insert(pr, index, price)
-
-    real_insert(amount_array, index, litres * price)
-    return amount_array[index], add_array(amount_array, index)
+                            branch_id[0], str(sales_date[0]), product, opening_stock,
+                            closing_stock, rtt)
+        hinsert("Stock_litres", "date, branchid, uuid, details, debit, credit", str(sales_date[0]),
+                branch_id[0], insert_id, product, 0, litres)
+        hinsert("Stock", "date, branchid, uuid, details, debit, credit", str(sales_date[0]),
+                branch_id[0], insert_id, product, 0, amount)
+        hinsert("Cash", "date, branchid, uuid, details, debit, credit", str(sales_date[0]),
+                branch_id[0], insert_id, product, amount, 0)
+    return str(litres), insert_id, amount_array[index], add_array(amount_array, index)
 
 
 def dips(dips_id, pms_od=0, pms_cd=0, ago_od=0, ago_cd=0, bik_od=0, bik_cd=0):
@@ -89,7 +92,8 @@ def insertion(table, position, index, details, debit, credit):
         hupdate(table, field, "id={0}".format(position))
         insert_id = position
     except sqlite3.OperationalError:
-        insert_id = hinsert(table, "date, branchid, details, debit, credit", str(sales_date[0]), branch_id[0],
+        insert_id = hinsert(table, "date, branchid, details, debit, credit",
+                            str(sales_date[0]), branch_id[0],
                             details_array[index], debit_array[index], credit_array[index])
     return str(add_array(debit_array, index)), str(add_array(credit_array, index)), insert_id
 
@@ -120,22 +124,32 @@ def add_array(args, index):
 
 
 def fuel_purchase(index, pms, pms_price, ago, ago_price, bik, bik_price):
-    pms = int(pms)
+    pms = float(pms)
     pms_price = float(pms_price)
-    ago = int(ago)
+    ago = float(ago)
     ago_price = float(ago_price)
-    bik = int(bik)
+    bik = float(bik)
     bik_price = float(bik_price)
-
+    litres = pms + ago + bik
+    amount = pms * pms_price + ago * ago_price + bik * bik_price
     try:
         field = "pms={0},pms_price={1},ago={2},ago_price={3}," \
                 "bik={4},bik_price={5}".format(pms, pms_price, ago, ago_price, bik, bik_price)
         hupdate("fuel_purchases", field, "id={0}".format(index))
+        hupdate("Stock", "debit={0}".format(amount), "uuid={0}".format(index))
+        hupdate("Stock_litres", "debit={0}".format(litres), "uuid={0}".format(index))
+
         insert_id = index
     except sqlite3.OperationalError:
-        insert_id = hinsert("fuel_purchases", "date, branchid, pms, pms_price, ago, ago_price, bik, bik_price",
+        insert_id = hinsert("fuel_purchases", "date, branchid, pms,"
+                                              " pms_price, ago, ago_price, bik, bik_price",
                             str(sales_date[0]), branch_id[0],
                             pms, pms_price, ago, ago_price, bik, bik_price)
+        hinsert("Stock", "date, branchid, uuid, details, debit, credit", str(sales_date[0]),
+                branch_id[0], insert_id, "Purchases", amount, 0)
+        hinsert("Stock_litres", "date, branchid, uuid, details, debit, credit", str(sales_date[0]),
+                branch_id[0], insert_id, "Purchases", litres, 0)
+
     return insert_id
 
 
@@ -143,7 +157,7 @@ def thousand_separator(data):
     if data is not None:
         try:
             d = float(data)
-            return locale.format("%d", d, grouping=True)
+            return locale.format("%05.2f", d, grouping=True)
         except ValueError:
             return str(0)
 
@@ -155,3 +169,14 @@ def cashbook():
 def trial():
     return hselect("*", "trial", " WHERE branchid={0}".format(str(branch_id[0])),
                    " AND date={0}".format(str(sales_date[0])))
+
+
+def get_price():
+    return hselect("pms, ago, bik", "prices",
+                   "WHERE branchid={0} AND "
+                   "start_date<='{1}' AND stop_date>'{1}'".format(branch_id[0], sales_date[0]),
+                   "")
+
+
+def make_date(year, month, day):
+    return '{0:04d}-{1:02d}-{2:02d}'.format(year, month + 1, day)

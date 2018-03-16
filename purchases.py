@@ -44,12 +44,12 @@ class FuelPurchase(Gtk.Dialog):
         self.pms_price.connect('changed',
                                lambda widget:
                                self.pms_total.set_text(thousand_separator(
-                                   str(int(self.pms.get_text().replace(",", "")) * int(
-                                       self.pms_price.get_text().replace(",", ""))))))
+                                   str(int(self.pms.get_text()) * int(
+                                       self.pms_price.get_text())))))
         grid.attach(self.pms_price, 6, 2, 1, 1)
         self.pms_total.set_placeholder_text("total")
         self.pms_total.connect("changed", lambda widget: total.set_text(
-            thousand_separator(str(int(self.pms_total.get_text().replace(",", ""))))))
+            thousand_separator(str(int(self.pms_total.get_text())))))
         grid.attach(self.pms_total, 8, 2, 1, 1)
 
         grid.attach(Gtk.Label("AGO"), 2, 4, 1, 1)
@@ -57,13 +57,13 @@ class FuelPurchase(Gtk.Dialog):
         grid.attach(self.ago, 4, 4, 1, 1)
         self.ago_price.connect('changed', lambda widget: self.ago_total.set_text(
             thousand_separator(
-                str(int(self.ago.get_text().replace(",", "")) * int(self.ago_price.get_text().replace(",", ""))))))
+                str(int(self.ago.get_text()) * int(self.ago_price.get_text())))))
         self.ago_price.set_placeholder_text("price")
         grid.attach(self.ago_price, 6, 4, 1, 1)
         self.ago_total.set_placeholder_text("total")
         self.ago_total.connect("changed", lambda widget: total.set_text(
             thousand_separator(
-                str(int(total.get_text().replace(",", "")) + int(self.ago_total.get_text().replace(",", ""))))))
+                str(int(total.get_text()) + int(self.ago_total.get_text())))))
 
         grid.attach(self.ago_total, 8, 4, 1, 1)
 
@@ -74,13 +74,13 @@ class FuelPurchase(Gtk.Dialog):
         self.bik_price.set_placeholder_text("price")
         self.bik_price.connect('changed', lambda widget: self.bik_total.set_text(
             thousand_separator(
-                str(int(self.bik.get_text().replace(",", "")) * int(self.bik_price.get_text().replace(",", ""))))))
+                str(int(self.bik.get_text()) * int(self.bik_price.get_text())))))
         grid.attach(self.bik_price, 6, 6, 1, 1)
 
         self.bik_total.set_placeholder_text("total")
         self.bik_total.connect("changed", lambda widget: total.set_text(
             thousand_separator(
-                str(int(total.get_text().replace(",", "")) + int(self.bik_total.get_text().replace(",", ""))))))
+                str(int(total.get_text()) + int(self.bik_total.get_text())))))
         grid.attach(self.bik_total, 8, 6, 1, 1)
         total.set_placeholder_text("total")
         grid.attach(total, 8, 8, 1, 1)
@@ -105,14 +105,14 @@ class FuelPurchase(Gtk.Dialog):
         self.close()
 
     def fuel_purchase_caller(self, widget):
-        if len(self.pms.get_text().replace(",", "")) and len(self.pms_price.get_text().replace(",", "")) and \
-                len(self.ago.get_text().replace(",", "")) and len(self.ago_price.get_text().replace(",", "")) \
-                and len(self.bik.get_text().replace(",", "")) and \
-                len(self.bik_price.get_text().replace(",", "")) > 0:
+        if len(self.pms.get_text()) and len(self.pms_price.get_text()) and \
+                len(self.ago.get_text()) and len(self.ago_price.get_text()) \
+                and len(self.bik.get_text()) and \
+                len(self.bik_price.get_text()) > 0:
             self.purchase_id = fuel_purchase(self.purchase_id, self.pms.get_text(),
                                              self.pms_price.get_text(), self.ago.get_text(),
                                              self.ago_price.get_text(), self.bik.get_text(),
-                                             self.bik_price.get_text().replace(",", ""))
+                                             self.bik_price.get_text())
 
 
 class Lubricants(Gtk.Dialog):

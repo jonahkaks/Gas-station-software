@@ -28,7 +28,6 @@ class DoubleEntry(Gtk.Dialog):
         box = self.get_content_area()
         title = self.get_title()
         self.entry_array = get_data(title)
-        print(self.entry_array)
         if len(self.entry_array) == 0:
             self.entry_array = []
         box.pack_start(self.scrollable, True, True, 0)
@@ -101,9 +100,9 @@ class DoubleEntry(Gtk.Dialog):
         try:
             for n in range(0, len(self.entry_array), 1):
                 real_insert(self.row_id, n, self.entry_array[n][0])
-                self.details[n].set_text(str(self.entry_array[n][3]))
-                self.debit[n].set_text(str(self.entry_array[n][4]))
-                self.credit[n].set_text(str(self.entry_array[n][5]))
+                self.details[n].set_text(str(self.entry_array[n][4]))
+                self.debit[n].set_text(str(self.entry_array[n][5]))
+                self.credit[n].set_text(str(self.entry_array[n][6]))
         except IndexError:
             pass
         self.show_all()
