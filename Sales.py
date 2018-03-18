@@ -25,7 +25,7 @@ class Sales(Gtk.ApplicationWindow):
         self.tree = Gtk.TreeView.new_with_model(self.account_filter)
         for i, column_title in enumerate(["Account Name", "Description", "Total"]):
             renderer = Gtk.CellRendererText()
-            renderer.set_fixed_size(300, 20)
+            renderer.set_fixed_size(400, 25)
             column = Gtk.TreeViewColumn(column_title, renderer, text=i)
             self.tree.append_column(column)
         self.scrollable_tree_list = Gtk.ScrolledWindow()
@@ -43,15 +43,17 @@ class Sales(Gtk.ApplicationWindow):
         self.expense_total = Gtk.Entry()
         self.product_label = []
         self.product_id = []
+        self.button = Gtk.Button()
         self.set_border_width(10)
         self.grid = Gtk.Grid(column_spacing=0, row_spacing=0)
         self.scrolled = Gtk.ScrolledWindow()
         self.scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         box2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.grid.set_hexpand(True)
         box2.pack_start(self.calender, False, False, 0)
-        box2.pack_start(self.grid, False, False, 0)
+        box2.pack_start(self.grid, False, True, 0)
         box2.pack_start(self.scrollable_tree_list, True, True, 0)
+        box2.pack_start(self.button, False, False, 0)
+
         self.scrolled.add(box2)
         self.add(self.box)
 
@@ -111,20 +113,24 @@ class Sales(Gtk.ApplicationWindow):
         for n in range(0, len(y), 1):
             self.product_id.append("")
             self.product_label.append(Gtk.Button(label=y[n]))
+            self.product_label[n].set_size_request(10, 10)
             self.grid.attach(self.product_label[n], 0, 3 + n, 2, 1)
 
             self.opening_meter.append(Gtk.Entry())
             self.opening_meter[n].set_placeholder_text('opening meter')
             self.opening_meter[n].connect('focus-out-event', self.sales_litres_caller, n)
+            self.opening_meter[n].connect('changed', self.subtraction, n)
             self.grid.attach(self.opening_meter[n], 2, 3 + n, 1, 1)
 
             self.closing_meter.append(Gtk.Entry())
             self.closing_meter[n].set_placeholder_text('closing meter')
             self.closing_meter[n].connect('focus-out-event', self.sales_litres_caller, n)
+            self.closing_meter[n].connect('changed', self.subtraction, n)
             self.grid.attach(self.closing_meter[n], 4, 3 + n, 1, 1)
 
             self.rtt.append(Gtk.Entry())
             self.rtt[n].connect('focus-out-event', self.sales_litres_caller, n)
+            self.rtt[n].connect('changed', self.subtraction, n)
             self.grid.attach(self.rtt[n], 6, 3 + n, 1, 1)
 
             self.litres.append(Gtk.Entry())
@@ -222,9 +228,9 @@ class Sales(Gtk.ApplicationWindow):
                         subaccount,
                         description)
                 hcreate(row, "'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'date' TEXT, " +
-                        "'branchid' INTEGER,'uuid' INTEGER,'details' TEXT,'debit' REAL,'credit' REAL")
+                        "'branchid' INTEGER,'uuid' TEXT,'details' TEXT,'debit' REAL,'credit' REAL")
                 hcreate(subaccount, "'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'date' TEXT, " +
-                        "'branchid' INTEGER, 'uuid' INTEGER,'details' TEXT, 'debit' REAL,'credit' REAL")
+                        "'branchid' INTEGER, 'uuid' TEXT,'details' TEXT, 'debit' REAL,'credit' REAL")
                 insert_trigger(subaccount, row)
 
             elif response == Gtk.ResponseType.CANCEL:
@@ -313,3 +319,21 @@ class Sales(Gtk.ApplicationWindow):
         self.account_list.clear()
         self.accounts(None, "top")
         self.show_all()
+
+    def subtraction(self, widget, choice):
+        try:
+            opening_stock = float(self.opening_meter[choice].get_text())
+            closing_stock = float(self.closing_meter[choice].get_text())
+            rtt = float(self.rtt[choice].get_text())
+            result = str(closing_stock - (opening_stock + rtt))
+            self.litres[choice].set_text(result)
+            price = int(self.price[choice].get_text())
+            litres = float(self.litres[choice].get_text())
+            real_insert(pr, choice, price)
+
+            real_insert(amount_array, choice, litres * price)
+            self.amount.set_text(str(amount_array[choice]))
+            self.total_amount.set_text(str(add_array(amount_array, choice)))
+
+        except:
+            pass

@@ -85,13 +85,13 @@ def insertion(table, position, index, details, debit, credit):
     real_insert(debit_array, index, debit)
     real_insert(credit_array, index, credit)
 
-    try:
+    if position is not None:
         field = "details='{0}', debit={1}, credit={2}".format(details_array[index],
                                                               debit_array[index],
                                                               credit_array[index])
         hupdate(table, field, "id={0}".format(position))
         insert_id = position
-    except sqlite3.OperationalError:
+    else:
         insert_id = hinsert(table, "date, branchid, details, debit, credit",
                             str(sales_date[0]), branch_id[0],
                             details_array[index], debit_array[index], credit_array[index])

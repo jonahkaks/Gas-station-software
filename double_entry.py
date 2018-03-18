@@ -26,8 +26,12 @@ class DoubleEntry(Gtk.Dialog):
         self.totald.set_placeholder_text("Total deposit")
         self.totalc.set_placeholder_text("Total credit")
         box = self.get_content_area()
+        self.entry_array = []
         title = self.get_title()
-        self.entry_array = get_data(title)
+        try:
+            self.entry_array = get_data(title)
+        except:
+            pass
         if len(self.entry_array) == 0:
             self.entry_array = []
         box.pack_start(self.scrollable, True, True, 0)

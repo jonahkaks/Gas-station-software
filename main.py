@@ -71,8 +71,8 @@ class Application(Gtk.Application):
     def do_activate(self):
         """
         this application function is used to activate the login window when the app is started
-        """
 
+        """
         self.window = Login()
         self.window.set_title("Login")
         self.window.set_application(self)
@@ -110,7 +110,7 @@ class Application(Gtk.Application):
 
     @staticmethod
     def on_help(action, param):
-        Gtk.show_uri(None, "http:www.newtonjonah.com", Gdk.CURRENT_TIME)
+        Gtk.show_uri(None, "https://github.com/jonahkaks/Gas-Station-Software/blob/master/README.md", Gdk.CURRENT_TIME)
 
     def on_about(self, action, param):
         """
@@ -150,8 +150,6 @@ class Application(Gtk.Application):
                 return 0
             elif k == "chat":
                 print("time to chat")
-
-
 
     def on_quit(self, action, param):
         """

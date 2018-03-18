@@ -1,13 +1,55 @@
-from definitions import *
+#!/usr/bin/python3
+import sys
 
-total_assets = 0
-current_assets = []
-fixed_assets = []
-
-
-def Capital(total_assts, total_lias):
-    return total_assts - total_lias
+from gi.repository import Gtk, Gdk
 
 
-def total_assets():
-    total_assets = add_array(current_assets + fixed_assets)
+class MyWindow(Gtk.Window):
+
+    def __init__(self):
+        Gtk.Window.__init__(self, title="Hello World")
+        self.set_name('MyWindow')
+        self.set_default_size(600, 300)
+
+        self.box = Gtk.HBox()
+        self.box.set_halign(Gtk.Align.CENTER)
+        self.box.set_valign(Gtk.Align.CENTER)
+        self.add(self.box)
+
+        self.button1 = Gtk.Button(label="Hello")
+        self.button1.connect("clicked", self.on_button1_clicked)
+        self.box.pack_start(self.button1, True, True, 0)
+
+        self.button2 = Gtk.Button(label="Goodbye")
+        self.button2.connect("clicked", self.on_button2_clicked)
+        self.box.pack_start(self.button2, True, True, 0)
+
+    def on_button1_clicked(self, widget):
+        print("Hello")
+
+    def on_button2_clicked(self, widget):
+        print("Goodbye")
+
+
+def main(argv):
+    def gtk_style():
+        css = b"""
+        """
+        style_provider = Gtk.CssProvider()
+        style_provider.load_from_data(css)
+
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            style_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+    gtk_style()
+    win = MyWindow()
+    win.connect("delete-event", Gtk.main_quit)
+    win.show_all()
+    Gtk.main()
+
+
+if __name__ == "__main__":
+    main(sys.argv)
