@@ -1,5 +1,3 @@
-import gi
-
 from Sales import Sales
 from definitions import *
 
@@ -16,26 +14,25 @@ authenticates a user
     def __init__(self, *args, **kwargs):
         super(Login, self).__init__(*args, **kwargs)
         self.sales_window = None
-        self.set_border_width(150)
-        self.set_default_size(500, 500)
+        self.set_default_size(300, 300)
+        self.set_border_width(50)
         self.set_position(Gtk.WindowPosition.CENTER)
 
-        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
-                           spacing=50)
+        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(self.box)
         self.username = Gtk.Entry()
         self.username.set_placeholder_text('username')
-        self.box.pack_start(self.username, True, True, 0)
+        self.box.pack_start(self.username, True, False, 0)
 
         self.password = Gtk.Entry()
         self.password.set_placeholder_text('password')
         self.password.set_visibility(False)
         self.password.connect("activate", self.controller)
-        self.box.pack_start(self.password, True, True, 0)
+        self.box.pack_start(self.password, True, False, 0)
 
         self.button = Gtk.Button(label='Login')
         self.button.connect('clicked', self.controller)
-        self.box.pack_start(self.button, True, True, 0)
+        self.box.pack_start(self.button, True, False, 0)
 
         self.label = Gtk.Label()
         self.box.pack_start(self.label, True, True, 0)

@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+from purchases import *
+from settings import Settings
+
 from accounting import *
 from calculator import Calc
 from dips import *
 from double_entry import *
-from purchases import *
-from settings import Settings
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk

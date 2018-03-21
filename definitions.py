@@ -1,6 +1,11 @@
 import locale
 
+import gi
+
 from database_handler import *
+
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
 
 branch_id = []
 pro = []
@@ -23,37 +28,22 @@ def real_insert(arr, index, value):
         arr.insert(index, value)
 
 
-def sales_litres(product_id=0, index=0, product="product", opening_stock=0, closing_stock=0, rtt=0, price=0):
+def sales_litres(product_id=0, index=0, product="product", opening_stock=0, closing_stock=0, rtt=0):
     opening_stock = float(opening_stock)
     closing_stock = float(closing_stock)
     rtt = float(rtt)
-    price = int(price)
     litres = closing_stock - (opening_stock + rtt)
-    amount = litres * price
-    real_insert(pr, index, price)
-    real_insert(amount_array, index, amount)
+
     if product_id:
         field = "product='{0}', opening_meter={1},closing_meter={2}," \
                 "rtt={3}".format(product, opening_stock, closing_stock, rtt)
         hupdate("fuel", field, "fuelid={0}".format(product_id))
-        hupdate("Stock_litres", "details='{0}',credit={1}".format(product,
-                                                                  litres), "uuid={0}".format(product_id))
-        hupdate("Stock", "details='{0}',credit={1}".format(product,
-                                                           amount), "uuid={0}".format(product_id))
-        hupdate("Cash", "details='{0}',credit={1}".format(product,
-                                                          amount), "uuid={0}".format(product_id))
         insert_id = product_id
     else:
         insert_id = hinsert("fuel", "branchid, date, product, opening_meter, closing_meter, rtt",
                             branch_id[0], str(sales_date[0]), product, opening_stock,
                             closing_stock, rtt)
-        hinsert("Stock_litres", "date, branchid, uuid, details, debit, credit", str(sales_date[0]),
-                branch_id[0], insert_id, product, 0, litres)
-        hinsert("Stock", "date, branchid, uuid, details, debit, credit", str(sales_date[0]),
-                branch_id[0], insert_id, product, 0, amount)
-        hinsert("Cash", "date, branchid, uuid, details, debit, credit", str(sales_date[0]),
-                branch_id[0], insert_id, product, amount, 0)
-    return str(litres), insert_id, amount_array[index], add_array(amount_array, index)
+    return str(litres), insert_id
 
 
 def dips(dips_id, pms_od=0, pms_cd=0, ago_od=0, ago_cd=0, bik_od=0, bik_cd=0):
@@ -117,10 +107,18 @@ def get_data(table):
 
 def add_array(args, index):
     total = 0
-    index += 1
     for a in args[:index]:
         total += a
     return total
+
+
+def sales_shs(index=0, litres=0, price=0):
+    price = int(price)
+    litres = float(litres)
+    real_insert(pr, index, price)
+
+    real_insert(amount_array, index, litres * price)
+    return amount_array[index], add_array(amount_array, index)
 
 
 def fuel_purchase(index, pms, pms_price, ago, ago_price, bik, bik_price):
@@ -130,14 +128,10 @@ def fuel_purchase(index, pms, pms_price, ago, ago_price, bik, bik_price):
     ago_price = float(ago_price)
     bik = float(bik)
     bik_price = float(bik_price)
-    litres = pms + ago + bik
-    amount = pms * pms_price + ago * ago_price + bik * bik_price
     try:
         field = "pms={0},pms_price={1},ago={2},ago_price={3}," \
                 "bik={4},bik_price={5}".format(pms, pms_price, ago, ago_price, bik, bik_price)
         hupdate("fuel_purchases", field, "id={0}".format(index))
-        hupdate("Stock", "debit={0}".format(amount), "uuid={0}".format(index))
-        hupdate("Stock_litres", "debit={0}".format(litres), "uuid={0}".format(index))
 
         insert_id = index
     except sqlite3.OperationalError:
@@ -145,11 +139,6 @@ def fuel_purchase(index, pms, pms_price, ago, ago_price, bik, bik_price):
                                               " pms_price, ago, ago_price, bik, bik_price",
                             str(sales_date[0]), branch_id[0],
                             pms, pms_price, ago, ago_price, bik, bik_price)
-        hinsert("Stock", "date, branchid, uuid, details, debit, credit", str(sales_date[0]),
-                branch_id[0], insert_id, "Purchases", amount, 0)
-        hinsert("Stock_litres", "date, branchid, uuid, details, debit, credit", str(sales_date[0]),
-                branch_id[0], insert_id, "Purchases", litres, 0)
-
     return insert_id
 
 
@@ -167,8 +156,10 @@ def cashbook():
 
 
 def trial():
-    return hselect("*", "trial", " WHERE branchid={0}".format(str(branch_id[0])),
-                   " AND date={0}".format(str(sales_date[0])))
+    results = hselect("details, credit, debit", "Cash", " WHERE branchid={0}".format(str(branch_id[0])),
+                      " AND date='{0}'".format(str(sales_date[0])))
+
+    return results
 
 
 def get_price():
@@ -180,3 +171,10 @@ def get_price():
 
 def make_date(year, month, day):
     return '{0:04d}-{1:02d}-{2:02d}'.format(year, month + 1, day)
+
+
+def error_handler(parent, error):
+    dialog = Gtk.MessageDialog(parent, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.CANCEL, error)
+    dialog.run()
+
+    dialog.destroy()

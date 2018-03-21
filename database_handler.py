@@ -46,16 +46,59 @@ def hdrop(table):
     conn.commit()
 
 
-def insert_trigger(table, super_table):
-    cur.execute("CREATE TRIGGER {0}_log AFTER INSERT ON {1} BEGIN "
-                "INSERT INTO {2}(date, branchid, uuid,"
-                " details, debit, credit) VALUES(NEW.date,"
-                " NEW.branchid, '{0}' || NEW.id, NEW.details, NEW.debit, "
-                "NEW.credit);END;".format(table.lower(), table, super_table))
-    conn.commit()
+def insert_trigger(table, super_table, account_type):
+    if account_type == "Decrease_cash":
+        cur.execute("CREATE TRIGGER {0}_log AFTER INSERT ON {1} BEGIN "
+                    "INSERT INTO {2}(date, branchid, uuid,"
+                    " details, debit, credit) VALUES(NEW.date,"
+                    " NEW.branchid, '{0}' || NEW.id, '{1}:'|| NEW.details, NEW.debit, "
+                    "NEW.credit);END;".format(table.lower(), table, super_table))
+        cur.execute("CREATE TRIGGER {0}_update_log AFTER UPDATE ON {1} BEGIN "
+                    "UPDATE {2} SET details='{1}:' || NEW.details, debit=NEW.debit, "
+                    "credit=NEW.credit WHERE uuid='{0}' || NEW.id"
+                    ";END;".format(table.lower(), table, super_table))
+        cur.execute("CREATE TRIGGER {0}_cash_log AFTER INSERT ON {1} BEGIN "
+                    "INSERT INTO Cash(date, branchid, uuid,"
+                    " details, debit, credit) VALUES(NEW.date,"
+                    " NEW.branchid, '{0}' || NEW.id, '{1}:' || NEW.details, NEW.credit, "
+                    "NEW.debit);END;".format(table.lower(), table))
+        cur.execute("CREATE TRIGGER {0}_cashupdate_log AFTER UPDATE ON {1} BEGIN "
+                    "UPDATE Cash SET details='{1}:'|| NEW.details, debit=NEW.credit, "
+                    "credit=NEW.debit WHERE uuid='{0}' || NEW.id"
+                    ";END;".format(table.lower(), table))
+        conn.commit()
 
-    cur.execute("CREATE TRIGGER {0}_update_log AFTER UPDATE ON {1} BEGIN "
-                "UPDATE {2} SET details=NEW.details, debit=NEW.debit, "
-                "credit=NEW.credit WHERE uuid='{0}' || NEW.id"
-                ";END;".format(table.lower(), table, super_table))
-    conn.commit()
+    elif account_type == "Increase_cash":
+        cur.execute("CREATE TRIGGER {0}_log AFTER INSERT ON {1} BEGIN "
+                    "INSERT INTO {2}(date, branchid, uuid,"
+                    " details, debit, credit) VALUES(NEW.date,"
+                    " NEW.branchid, '{0}' || NEW.id, '{1}:'|| NEW.details, NEW.debit, "
+                    "NEW.credit);END;".format(table.lower(), table, super_table))
+        cur.execute("CREATE TRIGGER {0}_update_log AFTER UPDATE ON {1} BEGIN "
+                    "UPDATE {2} SET details='{1}:' || NEW.details, debit=NEW.debit, "
+                    "credit=NEW.credit WHERE uuid='{0}' || NEW.id"
+                    ";END;".format(table.lower(), table, super_table))
+        cur.execute("CREATE TRIGGER {0}_cash_log AFTER INSERT ON {1} BEGIN "
+                    "INSERT INTO Cash(date, branchid, uuid,"
+                    " details, credit, debit) VALUES(NEW.date,"
+                    " NEW.branchid, '{0}' || NEW.id, '{1}:' || NEW.details, NEW.credit, "
+                    "NEW.debit);END;".format(table.lower(), table))
+        cur.execute("CREATE TRIGGER {0}_cashupdate_log AFTER UPDATE ON {1} BEGIN "
+                    "UPDATE Cash SET details='{1}:'|| NEW.details, debit=NEW.debit, "
+                    "credit=NEW.credit WHERE uuid='{0}' || NEW.id"
+                    ";END;".format(table.lower(), table))
+        conn.commit()
+        conn.commit()
+
+    elif account_type == "Subaccount":
+        cur.execute("CREATE TRIGGER {0}_log AFTER INSERT ON {1} BEGIN "
+                    "INSERT INTO {2}(date, branchid, uuid,"
+                    " details, debit, credit) VALUES(NEW.date,"
+                    " NEW.branchid, '{0}' || NEW.id, NEW.details, NEW.debit, "
+                    "NEW.credit);END;".format(table.lower(), table, super_table))
+        cur.execute("CREATE TRIGGER {0}_update_log AFTER UPDATE ON {1} BEGIN "
+                    "UPDATE {2} SET details=NEW.details, debit=NEW.debit, "
+                    "credit=NEW.credit WHERE uuid='{0}' || NEW.id"
+                    ";END;".format(table.lower(), table, super_table))
+    elif account_type == "Top_level_account":
+        print("Inserted")

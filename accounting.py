@@ -3,8 +3,7 @@
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
-from definitions import trial, cashbook
+from definitions import *
 
 
 class ThreeColumn(Gtk.Dialog):
@@ -49,22 +48,33 @@ class TrialBalance(Gtk.Dialog):
     def __init__(self, *args):
         Gtk.Dialog.__init__(self, *args)
         trial_details = trial()
+        self.debit = []
+        self.credit = []
+
         self.box = self.get_content_area()
-        self.set_default_size(500, 600)
+        self.set_default_size(700, 600)
         self.trial_store = Gtk.ListStore(str, int, int)
         for t in range(0, len(trial_details), 1):
             self.trial_store.append(trial_details[t])
+            self.debit.append(trial_details[t][1])
+            self.credit.append(trial_details[t][2])
+        self.button = Gtk.Button(label="Total debit:{0}   "
+                                       " Total Credit:{1}".format(add_array(self.debit, -1),
+                                                                  add_array(self.credit, -1)))
+
+
         self.current_filter_trial = None
         self.trial_filter = self.trial_store.filter_new()
 
         self.treeview = Gtk.TreeView.new_with_model(self.trial_filter)
         for i, column_title in enumerate(["Account Name", "Dr", "Cr"]):
             renderer = Gtk.CellRendererText()
-            renderer.set_fixed_size(100, 20)
+            renderer.set_fixed_size(200, 22)
             column = Gtk.TreeViewColumn(column_title, renderer, text=i)
             self.treeview.append_column(column)
         self.scrollable_treelist = Gtk.ScrolledWindow()
         self.scrollable_treelist.set_vexpand(True)
         self.scrollable_treelist.set_hexpand(True)
         self.box.pack_start(self.scrollable_treelist, True, True, 0)
+        self.box.pack_start(self.button, False, False, 0)
         self.scrollable_treelist.add(self.treeview)
