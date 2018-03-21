@@ -1,12 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-from purchases import *
-from settings import Settings
-
 from accounting import *
 from calculator import Calc
 from dips import *
 from double_entry import *
+from purchases import *
+from settings import Settings
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -30,8 +29,8 @@ class Sales(Gtk.ApplicationWindow):
             column = Gtk.TreeViewColumn(column_title, renderer, text=i)
             self.tree.append_column(column)
         self.scrollable_tree_list = Gtk.ScrolledWindow()
-        self.scrollable_tree_list.set_vexpand(True)
-        self.scrollable_tree_list.set_hexpand(True)
+        self.scrollable_tree_list.connect("button-press-event", self.right_clicked)
+
         self.scrollable_tree_list.add(self.tree)
         self.tree.connect("row-activated", self.menu_caller)
         self.tree.connect("button-press-event", self.right_clicked)
@@ -46,7 +45,7 @@ class Sales(Gtk.ApplicationWindow):
         self.product_id = []
         self.button = Gtk.Button()
         self.set_border_width(10)
-        self.grid = Gtk.Grid(column_spacing=0, row_spacing=0)
+        self.grid = Gtk.Grid()
         self.scrolled = Gtk.ScrolledWindow()
         self.scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         box2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -114,7 +113,6 @@ class Sales(Gtk.ApplicationWindow):
         for n in range(0, len(y), 1):
             self.product_id.append("")
             self.product_label.append(Gtk.Button(label=y[n]))
-            self.product_label[n].set_size_request(10, 10)
             self.grid.attach(self.product_label[n], 0, 3 + n, 2, 1)
 
             self.opening_meter.append(Gtk.Entry())
@@ -136,9 +134,11 @@ class Sales(Gtk.ApplicationWindow):
 
             self.litres.append(Gtk.Entry())
             self.litres[n].set_placeholder_text('litres')
+            self.litres[n].connect("changed", self.sales_shs_caller, n)
             self.grid.attach(self.litres[n], 8, 3 + n, 1, 1)
             self.price.append(Gtk.Entry())
             self.price[n].set_placeholder_text("price")
+            self.price[n].connect("changed", self.sales_shs_caller, n)
             self.grid.attach(self.price[n], 10, 3 + n, 1, 1)
 
             self.amount.append(Gtk.Entry())
@@ -152,29 +152,34 @@ class Sales(Gtk.ApplicationWindow):
         self.changed_day("calender")
 
     def sales_litres_caller(self, event, widget, choice):
+
         if len(self.product_label[choice].get_label()) and len(
                 self.opening_meter[choice].get_text()) and \
                 len(self.closing_meter[choice].get_text()) and \
-                len(self.rtt[choice].get_text()) and \
-                len(self.price[choice].get_text()) > 0:
-            result = sales_litres(self.product_id[choice], choice,
+                len(self.rtt[choice].get_text()) > 0:
+            result = sales_litres(self.product_id[choice],
                                   self.product_label[choice].get_label(),
                                   self.opening_meter[choice].get_text(),
                                   self.closing_meter[choice].get_text(),
-                                  self.rtt[choice].get_text(),
-                                  self.price[choice].get_text())
+                                  self.rtt[choice].get_text())
             self.litres[choice].set_text(result[0])
             real_insert(self.product_id, choice, result[1])
-            self.amount[choice].set_text(thousand_separator(str(result[2])))
-            self.total_amount.set_text(thousand_separator(str(result[3])))
-            self.changed_day("button")
+
+    def sales_shs_caller(self, widget, choice):
+        if len(self.litres[choice].get_text()) and len(
+                self.price[choice].get_text()) > 0:
+            result = sales_shs(choice, self.litres[choice].get_text(),
+                               self.price[choice].get_text())
+            self.amount[choice].set_text(thousand_separator(str(result[0])))
+            self.total_amount.set_text(thousand_separator(str(result[1])))
 
     def menu_caller(self, widget, row, col):
         model = widget.get_model()
         name = model[row][0]
-        self.account_list.clear()
+
         DoubleEntry(name, self, Gtk.DialogFlags.MODAL,
                     (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        self.account_list.clear()
 
         self.accounts(None, "top")
 
@@ -182,18 +187,23 @@ class Sales(Gtk.ApplicationWindow):
         if event.button == 3:
             pop = Gtk.Menu.new()
             model = widget.get_model()
-            row, column, posx, posy = widget.get_path_at_pos(int(event.x), int(event.y))
-            add_account = Gtk.MenuItem("Add " + model[row][0])
-            add_account.connect("activate", self.account_methods, "a", model[row][0])
+            row = ""
+            rows = ""
+            try:
+                row, column, posx, posy = widget.get_path_at_pos(int(event.x), int(event.y))
+                rows = model[row][0]
+            except:
+                rows = "top"
+            add_account = Gtk.MenuItem("Add " + rows)
+            add_account.connect("activate", self.account_methods, "a", rows)
             pop.insert(add_account, 0)
-            remove_account = Gtk.MenuItem("Remove " + model[row][0])
+            remove_account = Gtk.MenuItem("Remove " + rows)
             pop.insert(remove_account, 1)
-            remove_account.connect("activate", self.account_methods, "r", model[row][0])
+            remove_account.connect("activate", self.account_methods, "r", rows)
             pop.popup(None, None, None, None, event.button, Gtk.get_current_event_time())
             pop.show_all()
 
     def account_methods(self, widget, method, row):
-        self.account_list.clear()
         if method == "r":
             try:
                 hdelete("accounts", "name='{0}'".format(row))
@@ -205,6 +215,17 @@ class Sales(Gtk.ApplicationWindow):
         elif method == "a":
             subac = Gtk.Entry()
             subac.set_placeholder_text("child account")
+            store = Gtk.ListStore(str)
+            store.append(["Increase_cash"])
+            store.append(["Decrease_cash"])
+            store.append(["Top_level_account"])
+            store.append(["Subaccount"])
+
+            combo = Gtk.ComboBox.new_with_model(store)
+            renderer_text = Gtk.CellRendererText()
+            combo.pack_start(renderer_text, True)
+            combo.add_attribute(renderer_text, "text", 0)
+            combo.set_active(0)
             desc = Gtk.Entry()
             desc.set_placeholder_text("description")
             dialog = Gtk.Dialog("Enter field", self,
@@ -216,15 +237,17 @@ class Sales(Gtk.ApplicationWindow):
 
             dialog.set_default_size(300, 300)
             dialog.set_border_width(50)
-            box.pack_start(subac, True, True, 0)
-            box.pack_start(desc, True, True, 0)
+            box.pack_start(subac, True, False, 0)
+            box.pack_start(desc, True, False, 0)
+            box.pack_start(combo, True, False, 0)
 
             dialog.show_all()
 
             response = dialog.run()
             if response == Gtk.ResponseType.OK:
-                subaccount = subac.get_text().replace(",", " ")
-                description = desc.get_text().replace(",", " ")
+                subaccount = subac.get_text()
+                description = desc.get_text()
+                account_type = combo.get_active_iter()
                 hinsert("accounts", "branchid, level, name, description", branch_id[0], row,
                         subaccount,
                         description)
@@ -232,10 +255,11 @@ class Sales(Gtk.ApplicationWindow):
                         "'branchid' INTEGER,'uuid' TEXT,'details' TEXT,'debit' REAL,'credit' REAL")
                 hcreate(subaccount, "'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'date' TEXT, " +
                         "'branchid' INTEGER, 'uuid' TEXT,'details' TEXT, 'debit' REAL,'credit' REAL")
-                insert_trigger(subaccount, row)
+                insert_trigger(subaccount, row, account_type)
 
             elif response == Gtk.ResponseType.CANCEL:
                 print("canceled")
+            self.account_list.clear()
             self.accounts(None, "top")
             dialog.close()
 
