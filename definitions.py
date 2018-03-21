@@ -1,6 +1,7 @@
 import locale
 
 import gi
+from numpy import *
 
 from database_handler import *
 
@@ -29,9 +30,9 @@ def real_insert(arr, index, value):
 
 
 def sales_litres(product_id=0, index=0, product="product", opening_stock=0, closing_stock=0, rtt=0):
-    opening_stock = float(opening_stock)
-    closing_stock = float(closing_stock)
-    rtt = float(rtt)
+    opening_stock = double(opening_stock)
+    closing_stock = double(closing_stock)
+    rtt = double(rtt)
     litres = closing_stock - (opening_stock + rtt)
 
     if product_id:
@@ -47,12 +48,12 @@ def sales_litres(product_id=0, index=0, product="product", opening_stock=0, clos
 
 
 def dips(dips_id, pms_od=0, pms_cd=0, ago_od=0, ago_cd=0, bik_od=0, bik_cd=0):
-    pms_od = float(pms_od)
-    pms_cd = float(pms_cd)
-    ago_od = float(ago_od)
-    ago_cd = float(ago_cd)
-    bik_od = float(bik_od)
-    bik_cd = float(bik_cd)
+    pms_od = double(pms_od)
+    pms_cd = double(pms_cd)
+    ago_od = double(ago_od)
+    ago_cd = double(ago_cd)
+    bik_od = double(bik_od)
+    bik_cd = double(bik_cd)
 
     try:
         field = "pms_od={0},pms_cd={1},ago_od={2}," \
@@ -69,8 +70,8 @@ def dips(dips_id, pms_od=0, pms_cd=0, ago_od=0, ago_cd=0, bik_od=0, bik_cd=0):
 
 
 def insertion(table, position, index, details, debit, credit):
-    debit = float(debit)
-    credit = float(credit)
+    debit = double(debit)
+    credit = double(credit)
     real_insert(details_array, index, details)
     real_insert(debit_array, index, debit)
     real_insert(credit_array, index, credit)
@@ -85,7 +86,7 @@ def insertion(table, position, index, details, debit, credit):
         insert_id = hinsert(table, "date, branchid, details, debit, credit",
                             str(sales_date[0]), branch_id[0],
                             details_array[index], debit_array[index], credit_array[index])
-    return str(add_array(debit_array, index)), str(add_array(credit_array, index)), insert_id
+    return str(add_array(debit_array)), str(add_array(credit_array)), insert_id
 
 
 def login(user, password):
@@ -105,47 +106,43 @@ def get_data(table):
     return result
 
 
-def add_array(args, index):
+def add_array(args):
     total = 0
-    for a in args[:index]:
+    for a in args:
         total += a
     return total
 
 
 def sales_shs(index=0, litres=0, price=0):
     price = int(price)
-    litres = float(litres)
+    litres = double(litres)
     real_insert(pr, index, price)
 
     real_insert(amount_array, index, litres * price)
-    return amount_array[index], add_array(amount_array, index)
+    return amount_array[index], add_array(amount_array)
 
 
-def fuel_purchase(index, pms, pms_price, ago, ago_price, bik, bik_price):
-    pms = float(pms)
-    pms_price = float(pms_price)
-    ago = float(ago)
-    ago_price = float(ago_price)
-    bik = float(bik)
-    bik_price = float(bik_price)
+def purchase(index, invoice, inventory, quantity, price):
+    quantity = double(quantity)
+    price = double(price)
     try:
-        field = "pms={0},pms_price={1},ago={2},ago_price={3}," \
-                "bik={4},bik_price={5}".format(pms, pms_price, ago, ago_price, bik, bik_price)
-        hupdate("fuel_purchases", field, "id={0}".format(index))
+        field = "Invoice_id={0}, Inventory_id={1}," \
+                " quantity={2}, unit_price={3}".format(invoice,
+                                                       inventory, quantity, price)
+        hupdate("Purchases", field, "id={0}".format(index))
 
         insert_id = index
     except sqlite3.OperationalError:
-        insert_id = hinsert("fuel_purchases", "date, branchid, pms,"
-                                              " pms_price, ago, ago_price, bik, bik_price",
+        insert_id = hinsert("Purchases", "date, branchid, Invoice_id, Inventory_id, quantity, unit_price",
                             str(sales_date[0]), branch_id[0],
-                            pms, pms_price, ago, ago_price, bik, bik_price)
+                            invoice, inventory, quantity, price)
     return insert_id
 
 
 def thousand_separator(data):
     if data is not None:
         try:
-            d = float(data)
+            d = double(data)
             return locale.format("%05.2f", d, grouping=True)
         except ValueError:
             return str(0)

@@ -115,7 +115,7 @@ class DoubleEntry(Gtk.Dialog):
             real_insert(credit_array, index, float(self.credit[index].get_text()))
         except ValueError:
             pass
-        results = str(add_array(debit_array, index)), str(add_array(credit_array, index))
+        results = str(add_array(debit_array)), str(add_array(credit_array))
         self.totald.set_text(results[0])
         self.totalc.set_text(results[1])
         self.balance.set_markup("<span color=\'red\'><b>Balance ={0}</b></span>"

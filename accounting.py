@@ -59,9 +59,8 @@ class TrialBalance(Gtk.Dialog):
             self.debit.append(trial_details[t][1])
             self.credit.append(trial_details[t][2])
         self.button = Gtk.Button(label="Total debit:{0}   "
-                                       " Total Credit:{1}".format(add_array(self.debit, -1),
-                                                                  add_array(self.credit, -1)))
-
+                                       " Total Credit:{1}".format(add_array(self.debit),
+                                                                  add_array(self.credit)))
 
         self.current_filter_trial = None
         self.trial_filter = self.trial_store.filter_new()

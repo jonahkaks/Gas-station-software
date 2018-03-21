@@ -4,7 +4,7 @@ from accounting import *
 from calculator import Calc
 from dips import *
 from double_entry import *
-from purchases import *
+from inventory import *
 from settings import Settings
 
 gi.require_version('Gtk', '3.0')
@@ -17,17 +17,32 @@ class Sales(Gtk.ApplicationWindow):
         self.maximize()
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.calender = Gtk.Calendar()
-        self.account_list = Gtk.TreeStore(str, str, str)
+        self.account_list = Gtk.TreeStore(str, str, str, str)
         self.totals = []
         self.current_filter_sales = None
         self.account_filter = self.account_list.filter_new()
 
         self.tree = Gtk.TreeView.new_with_model(self.account_filter)
-        for i, column_title in enumerate(["Account Name", "Description", "Total"]):
-            renderer = Gtk.CellRendererText()
-            renderer.set_fixed_size(400, 25)
-            column = Gtk.TreeViewColumn(column_title, renderer, text=i)
-            self.tree.append_column(column)
+        renderer = Gtk.CellRendererText()
+        render_pix = Gtk.CellRendererPixbuf()
+        column = Gtk.TreeViewColumn("Account Name")
+        renderer.set_fixed_size(400, 25)
+        column.pack_start(render_pix, False)
+        column.add_attribute(render_pix, 'icon_name', 0)
+        column.pack_end(renderer, False)
+        column.add_attribute(renderer, 'text', 1)
+        self.tree.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        renderer.set_fixed_size(400, 25)
+        column = Gtk.TreeViewColumn("Description", renderer, text=2)
+        self.tree.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        renderer.set_fixed_size(400, 25)
+        column = Gtk.TreeViewColumn("Total Amount", renderer, text=3)
+        self.tree.append_column(column)
+
         self.scrollable_tree_list = Gtk.ScrolledWindow()
         self.scrollable_tree_list.connect("button-press-event", self.right_clicked)
 
@@ -36,6 +51,7 @@ class Sales(Gtk.ApplicationWindow):
         self.tree.connect("button-press-event", self.right_clicked)
         self.opening_meter = []
         self.closing_meter = []
+        self.purchases = None
         self.rtt = []
         self.litres = []
         self.price = []
@@ -59,15 +75,16 @@ class Sales(Gtk.ApplicationWindow):
 
         self.menubar = Gtk.MenuBar()
 
-        self.file_menu_d = Gtk.MenuItem("Purchases")
-        self.file_menu = Gtk.Menu()
-        self.file_menu_d.set_submenu(self.file_menu)
-        self.fuel = Gtk.MenuItem("Fuel")
-        self.fuel.connect("activate", self.top_menu_caller, "fuel")
-        self.file_menu.append(self.fuel)
-        self.lubricants = Gtk.MenuItem("Lubricants")
-        self.file_menu.append(self.lubricants)
-        self.menubar.append(self.file_menu_d)
+        self.inventory_menu = Gtk.Menu()
+        self.inventory = Gtk.MenuItem("Inventory")
+        self.inventory.set_submenu(self.inventory_menu)
+        self.purchase = Gtk.MenuItem("Purchases")
+        self.purchase.connect("activate", self.top_menu_caller, "purchase")
+        self.add_inventory_item = Gtk.MenuItem("Add Inventory Item")
+        self.add_inventory_item.connect("activate", self.top_menu_caller, "add_item")
+        self.inventory_menu.append(self.add_inventory_item)
+        self.inventory_menu.append(self.purchase)
+        self.menubar.append(self.inventory)
 
         self.reports_menu = Gtk.Menu()
         self.reports_menu_d = Gtk.MenuItem("Reports")
@@ -191,7 +208,7 @@ class Sales(Gtk.ApplicationWindow):
             rows = ""
             try:
                 row, column, posx, posy = widget.get_path_at_pos(int(event.x), int(event.y))
-                rows = model[row][0]
+                rows = model[row][1]
             except:
                 rows = "top"
             add_account = Gtk.MenuItem("Add " + rows)
@@ -211,6 +228,7 @@ class Sales(Gtk.ApplicationWindow):
                 hdrop()
             except:
                 pass
+            self.account_list.clear()
             self.accounts(None, "top")
         elif method == "a":
             subac = Gtk.Entry()
@@ -266,15 +284,17 @@ class Sales(Gtk.ApplicationWindow):
     def accounts(self, t, a):
         accounts = hselect("name, description", "accounts",
                            "WHERE level='{0}'".format(a), "")
+
         for account in accounts:
             try:
-                its = self.account_list.append(t, [account[0], account[1],
+                its = self.account_list.append(t, ["file-manager", account[0], account[1],
                                                    "{0}".format(
                                                        thousand_separator(hselect("SUM(debit-credit)", account[0],
                                                                                   "WHERE date='{0}'".format(
                                                                                       sales_date[0]),
                                                                                   "AND branchid = '{0}'".format(
                                                                                       branch_id[0]))[0][0]))])
+
             except:
                 its = self.account_list.append(t, [account[0], account[1], "0"])
             self.accounts(its, account[0])
@@ -294,14 +314,18 @@ class Sales(Gtk.ApplicationWindow):
                                                                Gtk.STOCK_OK, Gtk.ResponseType.OK))
             self.changed_day("button")
 
-        if name == "fuel":
-            FuelPurchase("Fuel Purchase", self, Gtk.DialogFlags.MODAL, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-                                                                        Gtk.STOCK_OK, Gtk.ResponseType.OK))
-            self.changed_day("button")
+        if name == "purchase":
+            Purchases("Purchases", self, Gtk.DialogFlags.MODAL,
+                      (Gtk.STOCK_OK, Gtk.ResponseType.OK,
+                       Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
 
         if name == "dips":
             FuelDips("Fuel Dips", self, Gtk.DialogFlags.MODAL, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                                                 Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        if name == "add_item":
+            Item("Add item", self, Gtk.DialogFlags.MODAL,
+                 (Gtk.STOCK_OK, Gtk.ResponseType.OK,
+                  Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
 
     def changed_day(self, widget):
         year, month, day = self.calender.get_date()
@@ -350,15 +374,16 @@ class Sales(Gtk.ApplicationWindow):
             opening_stock = float(self.opening_meter[choice].get_text())
             closing_stock = float(self.closing_meter[choice].get_text())
             rtt = float(self.rtt[choice].get_text())
-            result = str(closing_stock - (opening_stock + rtt))
-            self.litres[choice].set_text(result)
+            result = closing_stock - (opening_stock + rtt)
+
+            self.litres[choice].set_text(locale.format("%05.2f", result, grouping=False))
             price = int(self.price[choice].get_text())
-            litres = float(self.litres[choice].get_text())
+
             real_insert(pr, choice, price)
 
-            real_insert(amount_array, choice, litres * price)
+            real_insert(amount_array, choice, result * price)
             self.amount.set_text(str(amount_array[choice]))
-            self.total_amount.set_text(str(add_array(amount_array, choice)))
+            self.total_amount.set_text(str(add_array(amount_array)))
 
         except:
             pass
