@@ -14,6 +14,9 @@ from gi.repository import Gtk
 class Sales(Gtk.ApplicationWindow):
     def __init__(self, y, *args, **kwargs):
         super(Sales, self).__init__(*args, **kwargs)
+        hcreate("fuel", " `fuelid` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
+                        " `branchid` TEXT, `date` DATE NOT NULL, `product` TEXT,"
+                        " `opening_meter` REAL, `closing_meter` REAL, `rtt` REAL ")
         self.maximize()
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.calender = Gtk.Calendar()
@@ -192,7 +195,7 @@ class Sales(Gtk.ApplicationWindow):
 
     def menu_caller(self, widget, row, col):
         model = widget.get_model()
-        name = model[row][0]
+        name = model[row][1]
 
         DoubleEntry(name, self, Gtk.DialogFlags.MODAL,
                     (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
@@ -201,11 +204,11 @@ class Sales(Gtk.ApplicationWindow):
         self.accounts(None, "top")
 
     def right_clicked(self, widget, event):
+        row = 0
+        rows = 0
         if event.button == 3:
             pop = Gtk.Menu.new()
             model = widget.get_model()
-            row = ""
-            rows = ""
             try:
                 row, column, posx, posy = widget.get_path_at_pos(int(event.x), int(event.y))
                 rows = model[row][1]
@@ -246,7 +249,7 @@ class Sales(Gtk.ApplicationWindow):
             combo.set_active(0)
             desc = Gtk.Entry()
             desc.set_placeholder_text("description")
-            dialog = Gtk.Dialog("Enter field", self,
+            dialog = Gtk.Dialog("Enter Account", self,
                                 Gtk.DialogFlags.MODAL, (Gtk.STOCK_OK,
                                                         Gtk.ResponseType.OK,
                                                         Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
@@ -265,13 +268,15 @@ class Sales(Gtk.ApplicationWindow):
             if response == Gtk.ResponseType.OK:
                 subaccount = subac.get_text()
                 description = desc.get_text()
-                account_type = combo.get_active_iter()
+                model = combo.get_model()
+                tree_iter = combo.get_active_iter()
+                account_type = model[tree_iter][0]
                 hinsert("accounts", "branchid, level, name, description", branch_id[0], row,
                         subaccount,
                         description)
-                hcreate(row, "'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'date' TEXT, " +
+                hcreate(row, "'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'date' DATE NOT NULL, " +
                         "'branchid' INTEGER,'uuid' TEXT,'details' TEXT,'debit' REAL,'credit' REAL")
-                hcreate(subaccount, "'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'date' TEXT, " +
+                hcreate(subaccount, "'id' INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,'date' DATE NOT NULL, " +
                         "'branchid' INTEGER, 'uuid' TEXT,'details' TEXT, 'debit' REAL,'credit' REAL")
                 insert_trigger(subaccount, row, account_type)
 
@@ -331,19 +336,22 @@ class Sales(Gtk.ApplicationWindow):
         year, month, day = self.calender.get_date()
         real_insert(sales_date, 0, make_date(year, month, day))
         sales_results = get_data("fuel")
-        price = []
+        price.clear()
+        prices = []
+
         try:
-            prices = get_price()[0]
+            get_price()
             for m in range(0, len(self.product_label), 1):
                 b = self.product_label[m].get_label()
 
                 if b[0:3] == "PMS":
-                    real_insert(price, m, prices[0])
+                    real_insert(prices, m, price[0])
                 elif b[0:3] == "AGO":
-                    real_insert(price, m, prices[1])
+                    real_insert(prices, m, price[1])
                 elif b[0:3] == "BIK":
-                    real_insert(price, m, prices[2])
-        except IndexError:
+                    real_insert(prices, m, price[2])
+
+        except:
             pass
 
         if len(sales_results) > 0:
@@ -352,7 +360,7 @@ class Sales(Gtk.ApplicationWindow):
                 self.opening_meter[hs].set_text(str(sales_results[hs][4]))
                 self.closing_meter[hs].set_text(str(sales_results[hs][5]))
                 self.rtt[hs].set_text(str(sales_results[hs][6]))
-                self.price[hs].set_text(str(price[hs]))
+                self.price[hs].set_text(str(prices[hs]))
 
         elif len(sales_results) == 0:
             for i in range(0, len(self.opening_meter), 1):
@@ -365,6 +373,7 @@ class Sales(Gtk.ApplicationWindow):
                     self.price[i].set_text(str(price[i]))
                 except IndexError:
                     pass
+        prices.clear()
         self.account_list.clear()
         self.accounts(None, "top")
         self.show_all()

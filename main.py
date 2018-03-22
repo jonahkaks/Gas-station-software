@@ -120,7 +120,7 @@ class Application(Gtk.Application):
         about_dialog.set_program_name('Gas station')
         about_dialog.set_copyright("Copyright \xc2\xa9 2018 Newton Jonah")
         about_dialog.set_version('0.1.0')
-        about_dialog.set_website('http://www.newtonjonah.com')
+        about_dialog.set_website('https://github.com/jonahkaks/Gas-Station-Software/blob/master/README.md')
         about_dialog.set_website_label("NewtonJonah")
         about_dialog.set_logo_icon_name("gnome-builder")
         about_dialog.set_authors(["Kafeero Jonah", "Kibalama Timothy"])

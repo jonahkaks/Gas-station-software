@@ -1,5 +1,3 @@
-import gi
-
 from definitions import *
 
 gi.require_version('Gtk', '3.0')
@@ -10,6 +8,11 @@ class FuelDips(Gtk.Dialog):
 
     def __init__(self, *args):
         Gtk.Dialog.__init__(self, *args)
+        hcreate("Dips", "`id` INTEGER PRIMARY KEY AUTOINCREMENT,"
+                        " `branchid` INT ( 2 ) NOT NULL, `date` DATE NOT NULL,"
+                        "`pms_od` REAL ( 20 ) NOT NULL, `pms_cd` REAL ( 20 ) NOT NULL,"
+                        " `ago_od` REAL ( 20 ) NOT NULL, `ago_cd` REAL ( 20 ) NOT NULL,"
+                        " `bik_od` REAL ( 20 ) NOT NULL, `bik_cd` REAL ( 20 ) NOT NULL")
         self.dips_id = ""
         self.dip_array = []
         try:

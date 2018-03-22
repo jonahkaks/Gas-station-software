@@ -19,8 +19,9 @@ def hselect(operation, table, condition1, condition2):
     try:
         cur.execute("SELECT {0} FROM {1}  {2} {3}".format(operation, table, condition1, condition2))
         return cur.fetchall()
-    except IndexError:
+    except:
         print("failed to fetch data" + "\n")
+        return []
 
 
 def hcreate(table, sql):

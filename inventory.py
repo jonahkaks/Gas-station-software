@@ -1,4 +1,3 @@
-from database_handler import hselect, hinsert
 from definitions import *
 
 gi.require_version('Gtk', '3.0')
@@ -9,6 +8,10 @@ class Purchases(Gtk.Dialog):
 
     def __init__(self, *args):
         Gtk.Dialog.__init__(self, *args)
+        hcreate("Purchases", "`id` INTEGER PRIMARY KEY AUTOINCREMENT, "
+                             "`branchid` INT ( 2 ) NOT NULL, `date` DATE NOT NULL,"
+                             " `Invoice_id` INT ( 20 ) NOT NULL, `Inventory_id` INT ( 20 ) NOT NULL,"
+                             " `quantity` INT ( 6 ) NOT NULL, `unit_price` INT ( 9 ) NOT NULL")
         self.set_border_width(10)
         self.set_size_request(980, 500)
         self.purchase_array = hselect("*", "Purchases", " WHERE branchid=" + str(branch_id[0]),
@@ -125,11 +128,15 @@ class Purchases(Gtk.Dialog):
         self.show_all()
 
     def popover(self, widget, event, choice):
-        print("yes")
         self.popup = Gtk.Menu.new()
         product = []
         inventory = hselect("Inventory_id, Inventory_name", "Inventory",
                             " WHERE branchid={0}".format(branch_id[0]), "")
+
+        if len(inventory) == 0:
+            self.item[choice].set_editable(False)
+            error_handler(self, "Pliz register inventory")
+            return
         for x in range(0, len(inventory), 1):
             product.append([inventory[x][0], Gtk.MenuItem(inventory[x][1])])
             product[x][1].connect("activate", lambda widget, m: self.item[choice].set_text(str(product[m][0])), x)
@@ -154,6 +161,9 @@ class Item(Gtk.Dialog):
 
     def __init__(self, *args):
         Gtk.Dialog.__init__(self, *args)
+        hcreate("Inventory", "`Inventory_id` INTEGER PRIMARY KEY AUTOINCREMENT,"
+                             " `branchid` INTEGER NOT NULL, `Inventory_name` TEXT,"
+                             " `Inventory_description` TEXT")
         self.item = Gtk.Entry()
         self.item.set_placeholder_text("Item")
         self.description = Gtk.Entry()

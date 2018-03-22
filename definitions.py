@@ -1,12 +1,10 @@
-import locale
-
 import gi
-from numpy import *
 
 from database_handler import *
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
+import locale
 
 branch_id = []
 pro = []
@@ -15,6 +13,7 @@ cl = []
 rt = []
 pr = []
 al = []
+price = []
 amount_array = []
 sales_date = []
 details_array = []
@@ -30,9 +29,9 @@ def real_insert(arr, index, value):
 
 
 def sales_litres(product_id=0, index=0, product="product", opening_stock=0, closing_stock=0, rtt=0):
-    opening_stock = double(opening_stock)
-    closing_stock = double(closing_stock)
-    rtt = double(rtt)
+    opening_stock = float(opening_stock)
+    closing_stock = float(closing_stock)
+    rtt = float(rtt)
     litres = closing_stock - (opening_stock + rtt)
 
     if product_id:
@@ -48,12 +47,12 @@ def sales_litres(product_id=0, index=0, product="product", opening_stock=0, clos
 
 
 def dips(dips_id, pms_od=0, pms_cd=0, ago_od=0, ago_cd=0, bik_od=0, bik_cd=0):
-    pms_od = double(pms_od)
-    pms_cd = double(pms_cd)
-    ago_od = double(ago_od)
-    ago_cd = double(ago_cd)
-    bik_od = double(bik_od)
-    bik_cd = double(bik_cd)
+    pms_od = float(pms_od)
+    pms_cd = float(pms_cd)
+    ago_od = float(ago_od)
+    ago_cd = float(ago_cd)
+    bik_od = float(bik_od)
+    bik_cd = float(bik_cd)
 
     try:
         field = "pms_od={0},pms_cd={1},ago_od={2}," \
@@ -70,8 +69,8 @@ def dips(dips_id, pms_od=0, pms_cd=0, ago_od=0, ago_cd=0, bik_od=0, bik_cd=0):
 
 
 def insertion(table, position, index, details, debit, credit):
-    debit = double(debit)
-    credit = double(credit)
+    debit = float(debit)
+    credit = float(credit)
     real_insert(details_array, index, details)
     real_insert(debit_array, index, debit)
     real_insert(credit_array, index, credit)
@@ -115,7 +114,7 @@ def add_array(args):
 
 def sales_shs(index=0, litres=0, price=0):
     price = int(price)
-    litres = double(litres)
+    litres = float(litres)
     real_insert(pr, index, price)
 
     real_insert(amount_array, index, litres * price)
@@ -123,8 +122,8 @@ def sales_shs(index=0, litres=0, price=0):
 
 
 def purchase(index, invoice, inventory, quantity, price):
-    quantity = double(quantity)
-    price = double(price)
+    quantity = float(quantity)
+    price = float(price)
     try:
         field = "Invoice_id={0}, Inventory_id={1}," \
                 " quantity={2}, unit_price={3}".format(invoice,
@@ -142,7 +141,7 @@ def purchase(index, invoice, inventory, quantity, price):
 def thousand_separator(data):
     if data is not None:
         try:
-            d = double(data)
+            d = float(data)
             return locale.format("%05.2f", d, grouping=True)
         except ValueError:
             return str(0)
@@ -160,10 +159,15 @@ def trial():
 
 
 def get_price():
-    return hselect("pms, ago, bik", "prices",
-                   "WHERE branchid={0} AND "
-                   "start_date<='{1}' AND stop_date>'{1}'".format(branch_id[0], sales_date[0]),
-                   "")
+    for i in range(1, 4, 1):
+        result = hselect("price", "Prices", "WHERE branchid={0} AND "
+                                            "start_date<='{1}' AND stop_date>'{1}'"
+                                            " AND Inventory_code={2}".format(branch_id[0], sales_date[0], i), "")
+        try:
+            real_insert(price, i, result[0][0])
+        except IndexError:
+            real_insert(price, i, "")
+
 
 
 def make_date(year, month, day):
