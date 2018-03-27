@@ -1,4 +1,5 @@
 from definitions import *
+
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
@@ -11,17 +12,15 @@ class DoubleEntry(Gtk.Dialog):
         self.debit = []
         self.credit = []
         self.row_id = []
-        self.balance = Gtk.Label()
-        self.total_debit = []
-        self.total_credit = []
-        self.set_default_size(600, 500)
+        self.debit_array = []
+        self.credit_array = []
+
+        self.floating_balance = []
+        self.set_default_size(740, 600)
         self.set_border_width(40)
-        self.totald = Gtk.Entry()
-        self.totalc = Gtk.Entry()
+
         self.scrollable = Gtk.ScrolledWindow()
         self.scrollable.add(self.grid)
-        self.totald.set_placeholder_text("Total deposit")
-        self.totalc.set_placeholder_text("Total credit")
         box = self.get_content_area()
         self.entry_array = []
         title = self.get_title()
@@ -35,6 +34,8 @@ class DoubleEntry(Gtk.Dialog):
         self.grid.attach(Gtk.Label("Details"), 0, 2, 1, 1)
         self.grid.attach(Gtk.Label("Dr"), 2, 2, 1, 1)
         self.grid.attach(Gtk.Label("Cr"), 4, 2, 1, 1)
+        self.grid.attach(Gtk.Label("Balance"), 6, 2, 1, 1)
+
         if len(self.entry_array):
             self.add_row("button", len(self.entry_array))
         else:
@@ -47,19 +48,18 @@ class DoubleEntry(Gtk.Dialog):
         self.destroy()
 
     def insertion_caller(self, event, widget, choice):
-        if len(self.details[choice].get_text()) and len(self.debit[choice].get_text()) \
-                and len(self.credit[choice].get_text()) > 0:
+        details = self.details[choice].get_text()
+        debit = self.debit[choice].get_text()
+        credit = self.credit[choice].get_text()
+        if len(details) and len(debit) and len(credit) > 0:
             table = self.get_title()
-            results = insertion(table, self.row_id[choice], choice, self.details[choice].get_text(),
-                                self.debit[choice].get_text(), self.credit[choice].get_text())
+            id = insertion(table, self.row_id[choice], details, debit, credit)
             self.entry_array = get_data(table)
             if len(self.entry_array) == 0:
                 self.entry_array = []
-            self.totald.set_text(results[0])
-            self.totalc.set_text(results[1])
-            real_insert(self.row_id, choice, results[2])
-            self.balance.set_markup("<span color=\'red\'><b>Balance ={0}</b></span>"
-                                    .format(float(results[0]) - float(results[1])))
+            real_insert(self.row_id, choice, id)
+            real_insert(self.debit_array, choice, eval(debit))
+            real_insert(self.credit_array, choice, eval(credit))
 
     def add_row(self, widget, y):
         z = 0
@@ -69,12 +69,12 @@ class DoubleEntry(Gtk.Dialog):
                 self.grid.remove(self.details[n])
                 self.grid.remove(self.debit[n])
                 self.grid.remove(self.credit[n])
-            self.grid.remove(self.totald)
-            self.grid.remove(self.totalc)
-            self.grid.remove(self.balance)
+                self.grid.remove(self.floating_balance[n])
+
         for i in range(0, z, 1):
             self.row_id.append(None)
             self.details.append(Gtk.Entry())
+            self.details[i].set_has_frame(False)
             self.details[i].set_margin_left(20)
             self.details[i].set_placeholder_text("Name")
             self.details[i].connect("activate", self.add_row, z + 1)
@@ -83,6 +83,7 @@ class DoubleEntry(Gtk.Dialog):
 
             self.grid.attach(self.details[i], 0, 4 + 2 * i, 1, 1)
             self.debit.append(Gtk.Entry())
+            self.debit[i].set_has_frame(False)
             self.debit[i].connect("activate", self.add_row, z + 1)
             self.debit[i].connect("focus-out-event", self.insertion_caller, i)
             self.debit[i].connect("changed", self.chan, i)
@@ -90,14 +91,21 @@ class DoubleEntry(Gtk.Dialog):
             self.grid.attach(self.debit[i], 2, 4 + 2 * i, 1, 1)
 
             self.credit.append(Gtk.Entry())
+            self.credit[i].set_has_frame(False)
             self.credit[i].connect("activate", self.add_row, z + 1)
             self.credit[i].connect("focus-out-event", self.insertion_caller, i)
             self.credit[i].connect("changed", self.chan, i)
             self.credit[i].set_placeholder_text("Amount")
             self.grid.attach(self.credit[i], 4, 4 + 2 * i, 1, 1)
-        self.grid.attach(self.totald, 2, 4 + 2 * (y + 1), 1, 1)
-        self.grid.attach(self.totalc, 4, 4 + 2 * (y + 1), 1, 1)
-        self.grid.attach(self.balance, 4, 6 + 2 * (y + 1), 1, 1)
+
+            self.floating_balance.append(Gtk.Entry())
+            self.floating_balance[i].set_has_frame(False)
+            self.floating_balance[i].connect("activate", self.add_row, z + 1)
+            self.floating_balance[i].connect("focus-out-event", self.insertion_caller, i)
+            self.floating_balance[i].connect("changed", self.chan, i)
+            self.floating_balance[i].set_placeholder_text("Amount")
+            self.grid.attach(self.floating_balance[i], 6, 4 + 2 * i, 1, 1)
+
         try:
             for n in range(0, len(self.entry_array), 1):
                 real_insert(self.row_id, n, self.entry_array[n][0])
@@ -109,14 +117,11 @@ class DoubleEntry(Gtk.Dialog):
         self.show_all()
 
     def chan(self, widget, index):
-        try:
-            real_insert(details_array, index, self.details[index].get_text())
-            real_insert(debit_array, index, float(self.debit[index].get_text()))
-            real_insert(credit_array, index, float(self.credit[index].get_text()))
-        except ValueError:
-            pass
-        results = str(add_array(debit_array)), str(add_array(credit_array))
-        self.totald.set_text(results[0])
-        self.totalc.set_text(results[1])
-        self.balance.set_markup("<span color=\'red\'><b>Balance ={0}</b></span>"
-                                .format(float(results[0]) - float(results[1])))
+        details = self.details[index].get_text()
+        debit = self.debit[index].get_text()
+        credit = self.credit[index].get_text()
+        if len(details) and len(debit) and len(credit) > 0:
+            real_insert(self.debit_array, index, eval(debit))
+            real_insert(self.credit_array, index, eval(credit))
+            results = str(add_array(self.debit_array) - add_array(self.credit_array))
+            self.floating_balance[index].set_text(results)

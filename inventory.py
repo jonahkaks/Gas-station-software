@@ -13,7 +13,7 @@ class Purchases(Gtk.Dialog):
                              " `Invoice_id` INT ( 20 ) NOT NULL, `Inventory_id` INT ( 20 ) NOT NULL,"
                              " `quantity` INT ( 6 ) NOT NULL, `unit_price` INT ( 9 ) NOT NULL")
         self.set_border_width(10)
-        self.set_size_request(980, 500)
+        self.set_size_request(920, 500)
         self.purchase_array = hselect("*", "Purchases", " WHERE branchid=" + str(branch_id[0]),
                                       " AND date='" + sales_date[0] + "'")
         self.invoice = []
@@ -29,7 +29,7 @@ class Purchases(Gtk.Dialog):
         self.choose = []
 
         box = self.get_content_area()
-        self.grid = Gtk.Grid(column_spacing=0, row_spacing=2)
+        self.grid = Gtk.Grid(column_spacing=0, row_spacing=0)
         scrolled = Gtk.ScrolledWindow()
         scrolled.add(self.grid)
         box.pack_start(scrolled, True, True, 0)
@@ -78,6 +78,7 @@ class Purchases(Gtk.Dialog):
             self.row_id.append(None)
             self.invoice.append(Gtk.Entry())
             self.invoice[i].set_margin_left(20)
+            self.invoice[i].set_has_frame(False)
             self.invoice[i].set_placeholder_text("Invoice id")
             self.invoice[i].connect("activate", self.add_row, z + 1)
             self.invoice[i].connect("focus-out-event", self.purchase_caller, i)
@@ -89,6 +90,7 @@ class Purchases(Gtk.Dialog):
                                              image[i])
             self.item[i].connect("button-press-event", self.popover, i)
             self.item[i].connect("activate", self.add_row, z + 1)
+            self.item[i].set_has_frame(False)
             self.item[i].connect("focus-out-event", self.purchase_caller, i)
 
             self.item[i].set_placeholder_text("Item")
@@ -97,6 +99,7 @@ class Purchases(Gtk.Dialog):
 
             self.quantity.append(Gtk.Entry())
             self.quantity[i].connect("activate", self.add_row, z + 1)
+            self.quantity[i].set_has_frame(False)
             self.quantity[i].connect("focus-out-event", self.purchase_caller, i)
             self.quantity[i].connect("changed", self.calculate, i)
 
@@ -104,6 +107,7 @@ class Purchases(Gtk.Dialog):
             self.grid.attach(self.quantity[i], 4, 4 + 2 * i, 1, 1)
 
             self.price.append(Gtk.Entry())
+            self.price[i].set_has_frame(False)
             self.price[i].connect("activate", self.add_row, z + 1)
             self.price[i].connect("focus-out-event", self.purchase_caller, i)
             self.price[i].connect("changed", self.calculate, i)
@@ -111,9 +115,11 @@ class Purchases(Gtk.Dialog):
             self.grid.attach(self.price[i], 6, 4 + 2 * i, 1, 1)
 
             self.amount.append(Gtk.Entry())
+            self.amount[i].set_has_frame(False)
             self.amount[i].connect("activate", self.add_row, z + 1)
             self.amount[i].set_placeholder_text("Amount")
             self.grid.attach(self.amount[i], 8, 4 + 2 * i, 1, 1)
+        self.balance.set_has_frame(False)
         self.grid.attach(self.balance, 8, 4 + 2 * (y + 1), 1, 1)
 
         try:

@@ -21,18 +21,27 @@ class FuelDips(Gtk.Dialog):
         except IndexError:
             pass
         self.pms_dp = Gtk.Entry()
+        self.pms_dp.set_has_frame(False)
         self.pms_cd = Gtk.Entry()
+        self.pms_cd.set_has_frame(False)
         self.pms_od = Gtk.Entry()
+        self.pms_od.set_has_frame(False)
         self.ago_dp = Gtk.Entry()
+        self.ago_dp.set_has_frame(False)
         self.ago_cd = Gtk.Entry()
+        self.ago_cd.set_has_frame(False)
         self.ago_od = Gtk.Entry()
+        self.ago_od.set_has_frame(False)
         self.bik_dp = Gtk.Entry()
+        self.bik_dp.set_has_frame(False)
         self.bik_cd = Gtk.Entry()
+        self.bik_cd.set_has_frame(False)
         self.bik_od = Gtk.Entry()
+        self.bik_od.set_has_frame(False)
         self.set_default_size(600, 400)
         self.set_border_width(40)
         box = self.get_content_area()
-        grid = Gtk.Grid(column_spacing=3, row_spacing=10)
+        grid = Gtk.Grid(column_spacing=0, row_spacing=0)
         box.pack_start(grid, False, False, 0)
 
         grid.attach(Gtk.Label("Product"), 2, 0, 1, 1)
@@ -46,6 +55,7 @@ class FuelDips(Gtk.Dialog):
         self.pms_cd.set_placeholder_text("closing dips")
         self.pms_dp.set_placeholder_text("difference")
         dips_total = Gtk.Entry()
+        dips_total.set_has_frame(False)
 
         grid.attach(self.pms_od, 4, 2, 1, 1)
         try:

@@ -93,7 +93,7 @@ class Calc(Gtk.Dialog):
         self.store.append(widget.get_label())
         statement = ""
         for i in range(0, len(self.store), 1):
-            statement += self.store[i]
+            statement += eval(self.store[i])
         self.entry.set_text(statement)
 
     def answer(self, widget):
@@ -111,3 +111,4 @@ class Calc(Gtk.Dialog):
     def empty(self, widget):
         self.store = []
         self.entry.set_text("")
+

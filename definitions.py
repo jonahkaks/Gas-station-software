@@ -16,9 +16,6 @@ al = []
 price = []
 amount_array = []
 sales_date = []
-details_array = []
-debit_array = []
-credit_array = []
 
 
 def real_insert(arr, index, value):
@@ -28,7 +25,7 @@ def real_insert(arr, index, value):
         arr.insert(index, value)
 
 
-def sales_litres(product_id=0, index=0, product="product", opening_stock=0, closing_stock=0, rtt=0):
+def sales_litres(product_id=0, product="product", opening_stock=0, closing_stock=0, rtt=0):
     opening_stock = float(opening_stock)
     closing_stock = float(closing_stock)
     rtt = float(rtt)
@@ -43,7 +40,7 @@ def sales_litres(product_id=0, index=0, product="product", opening_stock=0, clos
         insert_id = hinsert("fuel", "branchid, date, product, opening_meter, closing_meter, rtt",
                             branch_id[0], str(sales_date[0]), product, opening_stock,
                             closing_stock, rtt)
-    return str(litres), insert_id
+    return str(locale.format("%05.2f", litres, grouping=False)), insert_id
 
 
 def dips(dips_id, pms_od=0, pms_cd=0, ago_od=0, ago_cd=0, bik_od=0, bik_cd=0):
@@ -68,24 +65,18 @@ def dips(dips_id, pms_od=0, pms_cd=0, ago_od=0, ago_cd=0, bik_od=0, bik_cd=0):
     return str(pms_od - pms_cd), str(ago_od - ago_cd), str(bik_od - bik_cd), insert_id
 
 
-def insertion(table, position, index, details, debit, credit):
+def insertion(table, position, details, debit, credit):
     debit = float(debit)
     credit = float(credit)
-    real_insert(details_array, index, details)
-    real_insert(debit_array, index, debit)
-    real_insert(credit_array, index, credit)
 
     if position is not None:
-        field = "details='{0}', debit={1}, credit={2}".format(details_array[index],
-                                                              debit_array[index],
-                                                              credit_array[index])
+        field = "details='{0}', debit={1}, credit={2}".format(details, debit, credit)
         hupdate(table, field, "id={0}".format(position))
         insert_id = position
     else:
         insert_id = hinsert(table, "date, branchid, details, debit, credit",
-                            str(sales_date[0]), branch_id[0],
-                            details_array[index], debit_array[index], credit_array[index])
-    return str(add_array(debit_array)), str(add_array(credit_array)), insert_id
+                            str(sales_date[0]), branch_id[0], details, debit, credit)
+    return insert_id
 
 
 def login(user, password):
@@ -105,10 +96,14 @@ def get_data(table):
     return result
 
 
-def add_array(args):
+def add_array(args=[], index=0):
     total = 0
-    for a in args:
-        total += a
+    if index:
+        for a in args[: index]:
+            total += a
+    else:
+        for a in args:
+            total += a
     return total
 
 
@@ -148,30 +143,71 @@ def thousand_separator(data):
 
 
 def cashbook():
-    return hselect("*", "cashbook", " WHERE branchid={0}".format(str(branch_id[0])), "")
+    cash = hselect("*", "Cash", " WHERE branchid={0}".format(str(branch_id[0])), "")
+    bank = hselect("*", "Bank", " WHERE branchid={0}".format(str(branch_id[0])), "")
+    return []
 
 
 def trial():
-    results = hselect("details, credit, debit", "Cash", " WHERE branchid={0}".format(str(branch_id[0])),
-                      " AND date='{0}'".format(str(sales_date[0])))
+    tables = hselect("name, account_type", "accounts",
+                     " WHERE branchid={0}".format(str(branch_id[0])), "")
+    for account, account_type in tables:
+        results = hselect("SUM(debit-credit)", account,
+                          " WHERE branchid={0}".format(str(branch_id[0])),
+                          " AND date='{0}'".format(str(sales_date[0])))
+        print(account, results[0][0])
 
-    return results
+    return []
 
 
 def get_price():
-    for i in range(1, 4, 1):
-        result = hselect("price", "Prices", "WHERE branchid={0} AND "
-                                            "start_date<='{1}' AND stop_date>'{1}'"
-                                            " AND Inventory_code={2}".format(branch_id[0], sales_date[0], i), "")
-        try:
-            real_insert(price, i, result[0][0])
-        except IndexError:
-            real_insert(price, i, "")
+    result = hselect("price", "Prices",
+                     "WHERE branchid={0} AND "
+                     "start_date<='{1}' AND stop_date>'{1}'"
+                     " AND Inventory_code={2}".format(branch_id[0],
+                                                      sales_date[0],
+                                                      hselect("Inventory_id",
+                                                              "Inventory",
+                                                              "WHERE Inventory_name='PMS'",
+                                                              "AND branchid=" + str(branch_id[0]))[0][0]), "")
+    real_insert(price, 0, result[0][0])
 
+    result = hselect("price", "Prices",
+                     "WHERE branchid={0} AND "
+                     "start_date<='{1}' AND stop_date>'{1}'"
+                     " AND Inventory_code={2}".format(branch_id[0],
+                                                      sales_date[0],
+                                                      hselect("Inventory_id",
+                                                              "Inventory",
+                                                              "WHERE Inventory_name='AGO'",
+                                                              "AND branchid=" + str(branch_id[0]))[0][0]), "")
+    real_insert(price, 1, result[0][0])
+    result = hselect("price", "Prices",
+                     "WHERE branchid={0} AND "
+                     "start_date<='{1}' AND stop_date>'{1}'"
+                     " AND Inventory_code={2}".format(branch_id[0],
+                                                      sales_date[0],
+                                                      hselect("Inventory_id",
+                                                              "Inventory",
+                                                              "WHERE Inventory_name='BIK'",
+                                                              "AND branchid=" + str(branch_id[0]))[0][0]), "")
+    real_insert(price, 2, result[0][0])
 
 
 def make_date(year, month, day):
     return '{0:04d}-{1:02d}-{2:02d}'.format(year, month + 1, day)
+
+
+def get_cash_profit():
+    cash_hand = 0
+    try:
+        cash_hand = hselect("SUM(debit-credit)", "Cash",
+                            "WHERE branchid={0} AND date='{1}'".format(branch_id[0],
+                                                                       sales_date[0]), "")[0][0]
+    except:
+        pass
+
+    return cash_hand
 
 
 def error_handler(parent, error):

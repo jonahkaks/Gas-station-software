@@ -51,7 +51,7 @@ class Settings(Gtk.Dialog):
         tree.set_model(treestore)
         self.vp.add1(tree)
         self.box.set_border_width(80)
-        self.grid = Gtk.Grid(column_spacing=0, row_spacing=10)
+        self.grid = Gtk.Grid(column_spacing=0, row_spacing=0)
         self.grid.attach(Gtk.Label("Item Code"), 0, 2, 1, 1)
         self.grid.attach(Gtk.Label("Price"), 2, 2, 1, 1)
         self.vp.add2(self.box)
@@ -83,12 +83,14 @@ class Settings(Gtk.Dialog):
             self.inventory.append(Gtk.Entry())
             self.inventory[i].set_margin_left(20)
             self.inventory[i].set_placeholder_text("Inventory_code")
+            self.inventory[i].set_has_frame(False)
             self.inventory[i].connect("activate", self.add_row, z + 1)
             self.inventory[i].connect("focus-out-event", self.insert_price, i)
             self.inventory[i].connect("button-press-event", self.popover, i)
             self.grid.attach(self.inventory[i], 0, 4 + 2 * i, 1, 1)
 
             self.price.append(Gtk.Entry())
+            self.price[i].set_has_frame(False)
             self.price[i].connect("activate", self.add_row, z + 1)
             self.price[i].connect("focus-out-event", self.insert_price, i)
             self.price[i].set_placeholder_text("Price")
@@ -118,16 +120,16 @@ class Settings(Gtk.Dialog):
 
     def insert_price(self, widget, event, choice):
         inventory = self.inventory[choice].get_text()
-        price = self.price[choice].get_text()
-        if len(inventory) and len(price) > 0:
+        prices = self.price[choice].get_text()
+        if len(inventory) and len(prices) > 0:
             if self.row_id[choice]:
-                fields = "Inventory_code={0}, price={1}".format(inventory, price)
+                fields = "Inventory_code={0}, price={1}".format(inventory, prices)
                 hupdate("Prices", fields, "id={0}".format(self.row_id[choice]))
                 self.label.set_markup("<span color='green'>Price updates successfully</span>")
             else:
                 insert_id = hinsert("Prices", "branchid, start_date,"
                                               "stop_date, Inventory_code, price",
-                                    branch_id[0], sales_date[0], "2090-01-01", inventory, price)
+                                    branch_id[0], sales_date[0], "2090-01-01", inventory, prices)
                 real_insert(self.row_id, choice, insert_id)
                 self.label.set_markup("<span color='blue'>Price set successfully</span>")
         self.show_all()

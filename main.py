@@ -97,7 +97,6 @@ class Application(Gtk.Application):
         action.connect("activate", self.on_about)
         self.add_action(action)
         action = Gio.SimpleAction.new("commandline", None)
-        action.connect("activate", self.commands)
         self.add_action(action)
         action = Gio.SimpleAction.new("help", None)
         action.connect("activate", self.on_help)
@@ -107,6 +106,13 @@ class Application(Gtk.Application):
         self.add_action(action)
         builder = Gtk.Builder.new_from_string(MENU_XML, -1)
         self.set_app_menu(builder.get_object("app-menu"))
+
+        css_provider = Gtk.CssProvider()
+        css_provider.load_from_path('application.css')
+        screen = Gdk.Screen.get_default()
+        style_context = Gtk.StyleContext()
+        style_context.add_provider_for_screen(screen, css_provider,
+                                              Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
     @staticmethod
     def on_help(action, param):
@@ -142,14 +148,6 @@ class Application(Gtk.Application):
             print("Test argument recieved")
         self.activate()
         return 0
-
-    def commands(self, param, action):
-        while 1:
-            k = input("Enter a command:")
-            if k == "quit":
-                return 0
-            elif k == "chat":
-                print("time to chat")
 
     def on_quit(self, action, param):
         """

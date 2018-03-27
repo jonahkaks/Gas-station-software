@@ -21,11 +21,13 @@ authenticates a user
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(self.box)
         self.username = Gtk.Entry()
+        self.username.set_has_frame(False)
         self.username.set_placeholder_text('username')
         self.box.pack_start(self.username, True, False, 0)
 
         self.password = Gtk.Entry()
         self.password.set_placeholder_text('password')
+        self.password.set_has_frame(False)
         self.password.set_visibility(False)
         self.password.connect("activate", self.controller)
         self.box.pack_start(self.password, True, False, 0)

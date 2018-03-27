@@ -17,11 +17,11 @@ class ThreeColumn(Gtk.Dialog):
         self.horizontal.pack_end(Gtk.Label("Cr"), False, False, 0)
         self.box.pack_start(self.horizontal, False, False, 0)
 
-        self.sales_liststore = Gtk.ListStore(str, str, str, int, int, str, str, str, int, int)
+        self.sales_list = Gtk.ListStore(str, str, str, int, int, str, str, str, int, int)
         for i in range(0, len(sales_details), 1):
-            self.sales_liststore.append(sales_details[i])
+            self.sales_list.append(sales_details[i])
         self.current_filter_sales = None
-        self.sales_filter = self.sales_liststore.filter_new()
+        self.sales_filter = self.sales_list.filter_new()
         self.sales_filter.set_visible_func(self.sales_filter_func)
 
         self.treeview = Gtk.TreeView.new_with_model(self.sales_filter)
