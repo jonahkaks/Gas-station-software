@@ -103,7 +103,7 @@ class Settings(Gtk.Dialog):
     def popover(self, widget, event, choice):
         self.popup = Gtk.Menu.new()
         product = []
-        inventory = hselect("Inventory_id, Inventory_name", "Inventory",
+        inventory = hselect("Inventory_code, Inventory_name", "Inventory",
                             " WHERE branchid={0}".format(branch_id[0]), "")
         if len(inventory) == 0:
             self.inventory[choice].set_editable(False)

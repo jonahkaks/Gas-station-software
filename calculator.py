@@ -25,6 +25,7 @@ class Calc(Gtk.Dialog):
         self.ans = 0
         self.grid = Gtk.Grid(column_spacing=0, row_spacing=0)
         self.entry = Gtk.Entry()
+        self.entry.set_has_frame(False)
         self.entry.connect("activate", self.answer)
         self.entry.connect("delete-from-cursor", self.empty)
         self.box.pack_start(self.entry, True, True, 0)

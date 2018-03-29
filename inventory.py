@@ -136,7 +136,7 @@ class Purchases(Gtk.Dialog):
     def popover(self, widget, event, choice):
         self.popup = Gtk.Menu.new()
         product = []
-        inventory = hselect("Inventory_id, Inventory_name", "Inventory",
+        inventory = hselect("Inventory_code, Inventory_name", "Inventory",
                             " WHERE branchid={0}".format(branch_id[0]), "")
 
         if len(inventory) == 0:
@@ -170,26 +170,34 @@ class Item(Gtk.Dialog):
         hcreate("Inventory", "`Inventory_id` INTEGER PRIMARY KEY AUTOINCREMENT,"
                              " `branchid` INTEGER NOT NULL, `Inventory_name` TEXT,"
                              " `Inventory_description` TEXT")
+        self.item_code = Gtk.Entry()
+        self.item_code.set_has_frame(False)
         self.item = Gtk.Entry()
+        self.item.set_has_frame(False)
         self.item.set_placeholder_text("Item")
         self.description = Gtk.Entry()
-        self.description.set_placeholder_text("description")
-        self.item.set_placeholder_text("child account")
+        self.description.set_has_frame(False)
+        self.description.set_placeholder_text("Description")
+        self.item.set_placeholder_text("Inventory name")
 
         box = self.get_content_area()
 
         self.set_default_size(300, 300)
         self.set_border_width(50)
+        box.pack_start(Gtk.Label("Item Code"), True, False, 1)
+        box.pack_start(self.item_code, True, False, 0)
+        box.pack_start(Gtk.Label("Item Name"), True, False, 1)
         box.pack_start(self.item, True, False, 0)
+        box.pack_start(Gtk.Label("Item Description"), True, False, 1)
         box.pack_start(self.description, True, False, 0)
 
         self.show_all()
 
         response = self.run()
         if response == Gtk.ResponseType.OK:
-            hinsert("Inventory", "branchid, "
-                                 "Inventory_name, Inventory_description",
-                    branch_id[0], self.item.get_text(), self.description.get_text())
+            hinsert("Inventory", "branchid, Inventory_code, Inventory_name, Inventory_description",
+                    branch_id[0], self.item_code.get_text(), self.item.get_text(),
+                    self.description.get_text())
         elif response == Gtk.ResponseType.CANCEL:
             print("cancel")
         self.close()

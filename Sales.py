@@ -21,7 +21,7 @@ class Sales(Gtk.ApplicationWindow):
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.calender = Gtk.Calendar()
         self.profit_label = Gtk.Label()
-        self.account_list = Gtk.TreeStore(str, str, str, str, str)
+        self.account_list = Gtk.TreeStore(str, str, str, str)
         self.totals = []
         self.current_filter_sales = None
         self.account_filter = self.account_list.filter_new()
@@ -30,7 +30,7 @@ class Sales(Gtk.ApplicationWindow):
         renderer = Gtk.CellRendererText()
         render_pix = Gtk.CellRendererPixbuf()
         column = Gtk.TreeViewColumn("Account Name")
-        renderer.set_fixed_size(200, 25)
+        renderer.set_fixed_size(400, 25)
         column.pack_start(render_pix, False)
         column.add_attribute(render_pix, 'icon_name', 0)
         column.pack_end(renderer, False)
@@ -39,18 +39,13 @@ class Sales(Gtk.ApplicationWindow):
 
         renderer = Gtk.CellRendererText()
         renderer.set_property("editable", True)
-        renderer.set_fixed_size(200, 25)
+        renderer.set_fixed_size(400, 25)
         column = Gtk.TreeViewColumn("Description", renderer, text=2)
         self.tree.append_column(column)
 
         renderer = Gtk.CellRendererText()
-        renderer.set_fixed_size(200, 25)
-        column = Gtk.TreeViewColumn("Balance ", renderer, text=3)
-        self.tree.append_column(column)
-
-        renderer = Gtk.CellRendererText()
         renderer.set_fixed_size(400, 25)
-        column = Gtk.TreeViewColumn("Total ", renderer, text=4)
+        column = Gtk.TreeViewColumn("Balance ", renderer, text=3)
         self.tree.append_column(column)
 
         self.scrollable_tree_list = Gtk.ScrolledWindow()
@@ -84,8 +79,18 @@ class Sales(Gtk.ApplicationWindow):
         self.button.add(self.profit_label)
         self.scrolled.add(box2)
         self.add(self.box)
-
         self.menubar = Gtk.MenuBar()
+
+        self.file = Gtk.MenuItem("File")
+        self.file_menu = Gtk.Menu()
+        self.print = Gtk.MenuItem("Print")
+        self.file_menu.append(self.print)
+        self.page = Gtk.MenuItem("Page Setup")
+        self.file_menu.append(self.page)
+        self.backup = Gtk.MenuItem("Backup Database")
+        self.file_menu.append(self.backup)
+        self.file.set_submenu(self.file_menu)
+        self.menubar.append(self.file)
 
         self.inventory_menu = Gtk.Menu()
         self.inventory = Gtk.MenuItem("Inventory")
@@ -111,18 +116,23 @@ class Sales(Gtk.ApplicationWindow):
         self.reports_menu.append(Gtk.MenuItem("Balance sheet"))
         self.menubar.append(self.reports_menu_d)
 
+        self.stock = Gtk.MenuItem("Stock")
+        self.stock_menu = Gtk.Menu()
+        self.stock.set_submenu(self.stock_menu)
         self.dips = Gtk.MenuItem("Dips")
+        self.stock_menu.append(self.dips)
         self.dips.connect("activate", self.top_menu_caller, "dips")
-        self.menubar.append(self.dips)
-
-        self.utilities = Gtk.MenuItem("Utilities")
-        self.utilities.connect("activate", self.top_menu_caller, "calc")
-        self.menubar.append(self.utilities)
+        self.menubar.append(self.stock)
 
         self.settings_button = Gtk.MenuItem("Settings")
         self.settings_button.set_use_underline(True)
         self.settings_button.connect("activate", self.top_menu_caller, "settings")
         self.menubar.append(self.settings_button)
+
+        self.utilities = Gtk.MenuItem("Utilities")
+        self.utilities.connect("activate", self.top_menu_caller, "calc")
+        self.menubar.append(self.utilities)
+
         self.notebook = Gtk.Notebook()
         self.notebook.set_tab_pos(Gtk.PositionType.TOP)
         self.notebook.append_page(self.scrolled)
@@ -214,10 +224,10 @@ class Sales(Gtk.ApplicationWindow):
         model = widget.get_model()
         name = model[row][1]
         DoubleEntry(name, self, Gtk.DialogFlags.MODAL,
-                    (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK))
+                    (Gtk.STOCK_OK, Gtk.ResponseType.OK, Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
         self.account_list.clear()
 
-        self.accounts(None, "NewTopLevelAccount")
+        self.changed_day("button")
 
     def right_clicked(self, widget, event):
         if event.button == 3:
@@ -319,20 +329,28 @@ class Sales(Gtk.ApplicationWindow):
             dialog.close()
 
     def accounts(self, t, a):
-        accounts = hselect("name, description", "accounts",
-                           "WHERE level='{0}'".format(a), "")
+        accounts = hselect("name, description, account_type", "accounts",
+                           "WHERE level='{0}' AND branchid={1}".format(a, branch_id[0]), "")
         for account in accounts:
             try:
-                balance = hselect("SUM(debit-credit)", account[0],
-                                  "WHERE date='{0}' AND branchid ={1}".format(sales_date[0],
-                                                                              branch_id[0]), "")[0][0]
+                if account[2] in ["Assets", "Expenses"]:
+                    balance = hselect("SUM(debit-credit)", account[0],
+                                      "WHERE date='{0}' AND branchid ={1}".format(sales_date[0],
+                                                                                  branch_id[0]), "")[0][0]
 
-                its = self.account_list.append(t, ["document-new", account[0], account[1],
-                                                   thousand_separator(balance), "0"])
+                    its = self.account_list.append(t, ["document-new", account[0], account[1],
+                                                       thousand_separator(balance)])
+                elif account[2] in ["Incomes", "Liabilities", "Equity"]:
+                    balance = hselect("SUM(credit-debit)", account[0],
+                                      "WHERE date='{0}' AND branchid ={1}".format(sales_date[0],
+                                                                                  branch_id[0]), "")[0][0]
+
+                    its = self.account_list.append(t, ["document-new", account[0], account[1],
+                                                       thousand_separator(balance)])
+
             except:
                 its = self.account_list.append(t, [account[0], account[1], "0"])
             self.accounts(its, account[0])
-
 
     def top_menu_caller(self, widget, name):
         if name == "cash":
@@ -347,7 +365,6 @@ class Sales(Gtk.ApplicationWindow):
         if name == "settings":
             Settings("Settings", self, Gtk.DialogFlags.MODAL, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                                                Gtk.STOCK_OK, Gtk.ResponseType.OK))
-            self.changed_day("button")
 
         if name == "purchase":
             Purchases("Purchases", self, Gtk.DialogFlags.MODAL,
@@ -410,6 +427,13 @@ class Sales(Gtk.ApplicationWindow):
         prices.clear()
         self.account_list.clear()
         self.accounts(None, "NewTopLevelAccount")
+        imb = get_imbalance()
+
+        if not imb:
+            pass
+        else:
+            its = self.account_list.append(None, ["document-new", "Imbalance", "Imbalance",
+                                                  thousand_separator(imb)])
         self.show_all()
 
     def subtraction(self, widget, choice):
