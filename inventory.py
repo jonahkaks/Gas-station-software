@@ -6,16 +6,19 @@ from gi.repository import Gtk, Gio
 
 class Purchases(Gtk.Dialog):
 
-    def __init__(self, *args):
+    def __init__(self, branch_id, date, *args):
         Gtk.Dialog.__init__(self, *args)
-        hcreate("Purchases", "`id` INTEGER PRIMARY KEY AUTOINCREMENT, "
-                             "`branchid` INT ( 2 ) NOT NULL, `date` DATE NOT NULL,"
-                             " `Invoice_id` INT ( 20 ) NOT NULL, `Inventory_id` INT ( 20 ) NOT NULL,"
-                             " `quantity` INT ( 6 ) NOT NULL, `unit_price` INT ( 9 ) NOT NULL")
+        self.database = DataBase("julaw.db")
+        self.definitions = Definitions()
+        self.definitions.set_id(branch_id)
+        self.definitions.set_date(date)
+        self.database.hcreate("Purchases", "`id` INTEGER PRIMARY KEY AUTOINCREMENT, "
+                                           "`branchid` INT ( 2 ) NOT NULL, `date` DATE NOT NULL,"
+                                           " `Invoice_id` INT ( 20 ) NOT NULL, `Inventory_id` INT ( 20 ) NOT NULL,"
+                                           " `quantity` INT ( 6 ) NOT NULL, `unit_price` INT ( 9 ) NOT NULL")
         self.set_border_width(10)
         self.set_size_request(920, 500)
-        self.purchase_array = hselect("*", "Purchases", " WHERE branchid=" + str(branch_id[0]),
-                                      " AND date='" + sales_date[0] + "'")
+        self.purchase_array = self.definitions.get_data("Purchases")
         self.invoice = []
         self.row_id = []
         self.popup = None
@@ -47,9 +50,9 @@ class Purchases(Gtk.Dialog):
 
         response = self.run()
         if response == Gtk.ResponseType.OK:
-            print("okay")
+            self.database.__del__()
         elif response == Gtk.ResponseType.CANCEL:
-            print("Cancel")
+            self.database.__del__()
         self.close()
 
     def purchase_caller(self, widget, event, choice):
@@ -59,7 +62,7 @@ class Purchases(Gtk.Dialog):
         price = self.price[choice].get_text()
         if len(invoice) and len(inventory) and \
                 len(quantity) and len(price) > 0:
-            insert = purchase(self.row_id[choice], invoice, inventory, quantity, price)
+            insert = self.definitions.purchase(self.row_id[choice], invoice, inventory, quantity, price)
             real_insert(self.row_id, choice, insert)
 
     def add_row(self, widget, y):
@@ -85,9 +88,8 @@ class Purchases(Gtk.Dialog):
             self.grid.attach(self.invoice[i], 0, 4 + 2 * i, 1, 1)
 
             self.item.append(Gtk.Entry())
-            image.append(Gio.ThemedIcon(name="bottom"))
-            self.item[i].set_icon_from_gicon(Gtk.EntryIconPosition.SECONDARY,
-                                             image[i])
+            image = Gio.ThemedIcon(name="bottom")
+            self.item[i].set_icon_from_gicon(Gtk.EntryIconPosition.SECONDARY, image)
             self.item[i].connect("button-press-event", self.popover, i)
             self.item[i].connect("activate", self.add_row, z + 1)
             self.item[i].set_has_frame(False)
@@ -136,8 +138,8 @@ class Purchases(Gtk.Dialog):
     def popover(self, widget, event, choice):
         self.popup = Gtk.Menu.new()
         product = []
-        inventory = hselect("Inventory_code, Inventory_name", "Inventory",
-                            " WHERE branchid={0}".format(branch_id[0]), "")
+        inventory = self.database.hselect("Inventory_code, Inventory_name", "Inventory",
+                                          " WHERE branchid={0}".format(self.definitions.get_id()), "")
 
         if len(inventory) == 0:
             self.item[choice].set_editable(False)
@@ -165,11 +167,15 @@ class Purchases(Gtk.Dialog):
 
 class Item(Gtk.Dialog):
 
-    def __init__(self, *args):
+    def __init__(self, branch_id, *args):
         Gtk.Dialog.__init__(self, *args)
-        hcreate("Inventory", "`Inventory_id` INTEGER PRIMARY KEY AUTOINCREMENT,"
-                             " `branchid` INTEGER NOT NULL, `Inventory_name` TEXT,"
-                             " `Inventory_description` TEXT")
+        self.database = DataBase("julaw.db")
+        self.definitions = Definitions()
+        self.definitions.set_id(branch_id)
+        self.database.hcreate("Inventory", "`Inventory_id` INTEGER PRIMARY KEY AUTOINCREMENT,"
+                                           " `branchid` INTEGER NOT NULL, `Inventory_code` INTEGER NOT NULL"
+                                           ", `Inventory_name` TEXT,"
+                                           " `Inventory_description` TEXT")
         self.item_code = Gtk.Entry()
         self.item_code.set_has_frame(False)
         self.item = Gtk.Entry()
@@ -195,9 +201,12 @@ class Item(Gtk.Dialog):
 
         response = self.run()
         if response == Gtk.ResponseType.OK:
-            hinsert("Inventory", "branchid, Inventory_code, Inventory_name, Inventory_description",
-                    branch_id[0], self.item_code.get_text(), self.item.get_text(),
-                    self.description.get_text())
+            self.database.hinsert("Inventory", "branchid, Inventory_code,"
+                                               " Inventory_name, Inventory_description",
+                                  self.definitions.get_id(), self.item_code.get_text(),
+                                  self.item.get_text(),
+                                  self.description.get_text())
+            self.database.__del__()
         elif response == Gtk.ResponseType.CANCEL:
-            print("cancel")
+            self.database.__del__()
         self.close()

@@ -169,7 +169,5 @@ def accounting_equation(assets=0, liabilities=0, equity=0, income=0, expenses=0)
     c = equity + income + liabilities
     if d == c:
         return
-    elif d > c:
-        return d - c
     else:
-        return -1 * (c - d)
+        return d - c

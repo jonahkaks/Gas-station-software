@@ -4,7 +4,7 @@ import gi
 
 gi.require_version('Gtk', '3.0')
 from definitions import *
-from database_handler import *
+from database_handler import DataBase
 
 
 def replace_widget(old, new):
@@ -17,11 +17,16 @@ def replace_widget(old, new):
 
 
 class Settings(Gtk.Dialog):
-    def __init__(self, *args):
+    def __init__(self, branch_id, date, *args):
         Gtk.Dialog.__init__(self, *args)
-        hcreate("Prices", "`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
-                          "`branchid` INTEGER NOT NULL, `start_date` DATE NOT NULL,"
-                          " `stop_date` DATE NOT NULL, `Inventory_code` INTEGER NOT NULL, `price` INTEGER NOT NULL")
+        self.database = DataBase("julaw.db")
+        self.definitions = Definitions()
+        self.definitions.set_date(date)
+        self.definitions.set_id(branch_id)
+        self.database.hcreate("Prices", "`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
+                                        "`branchid` INTEGER NOT NULL, `start_date` DATE NOT NULL,"
+                                        " `stop_date` DATE NOT NULL,"
+                                        " `Inventory_code` INTEGER NOT NULL, `price` INTEGER NOT NULL")
 
         self.save_price = Gtk.Button("Save")
         self.label = Gtk.Label()
@@ -103,8 +108,8 @@ class Settings(Gtk.Dialog):
     def popover(self, widget, event, choice):
         self.popup = Gtk.Menu.new()
         product = []
-        inventory = hselect("Inventory_code, Inventory_name", "Inventory",
-                            " WHERE branchid={0}".format(branch_id[0]), "")
+        inventory = self.database.hselect("Inventory_code, Inventory_name", "Inventory",
+                                          " WHERE branchid={0}".format(self.definitions.get_id()), "")
         if len(inventory) == 0:
             self.inventory[choice].set_editable(False)
             error_handler(self, "pliz add inventory items first")
@@ -124,12 +129,13 @@ class Settings(Gtk.Dialog):
         if len(inventory) and len(prices) > 0:
             if self.row_id[choice]:
                 fields = "Inventory_code={0}, price={1}".format(inventory, prices)
-                hupdate("Prices", fields, "id={0}".format(self.row_id[choice]))
+                self.database.hupdate("Prices", fields, "id={0}".format(self.row_id[choice]))
                 self.label.set_markup("<span color='green'>Price updates successfully</span>")
             else:
-                insert_id = hinsert("Prices", "branchid, start_date,"
-                                              "stop_date, Inventory_code, price",
-                                    branch_id[0], sales_date[0], "2090-01-01", inventory, prices)
+                insert_id = self.database.hinsert("Prices", "branchid, start_date,"
+                                                            "stop_date, Inventory_code, price",
+                                                  self.definitions.get_id(), self.definitions
+                                                  .get_date(), "2090-01-01", inventory, prices)
                 real_insert(self.row_id, choice, insert_id)
                 self.label.set_markup("<span color='blue'>Price set successfully</span>")
         self.show_all()

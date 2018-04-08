@@ -1,4 +1,7 @@
-from definitions import *
+import gi
+
+from database_handler import *
+from definitions import Definitions
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -6,17 +9,22 @@ from gi.repository import Gtk
 
 class FuelDips(Gtk.Dialog):
 
-    def __init__(self, *args):
+    def __init__(self, branch_id, date, *args):
         Gtk.Dialog.__init__(self, *args)
-        hcreate("Dips", "`id` INTEGER PRIMARY KEY AUTOINCREMENT,"
-                        " `branchid` INT ( 2 ) NOT NULL, `date` DATE NOT NULL,"
-                        "`pms_od` REAL ( 20 ) NOT NULL, `pms_cd` REAL ( 20 ) NOT NULL,"
-                        " `ago_od` REAL ( 20 ) NOT NULL, `ago_cd` REAL ( 20 ) NOT NULL,"
-                        " `bik_od` REAL ( 20 ) NOT NULL, `bik_cd` REAL ( 20 ) NOT NULL")
+        self.database = DataBase("julaw.db")
+        self.definitions = Definitions()
+        self.definitions.set_id(branch_id)
+        self.definitions.set_date(date)
+
+        self.database.hcreate("Dips", "`id` INTEGER PRIMARY KEY AUTOINCREMENT,"
+                                      " `branchid` INT ( 2 ) NOT NULL, `date` DATE NOT NULL,"
+                                      "`pms_od` REAL ( 20 ) NOT NULL, `pms_cd` REAL ( 20 ) NOT NULL,"
+                                      " `ago_od` REAL ( 20 ) NOT NULL, `ago_cd` REAL ( 20 ) NOT NULL,"
+                                      " `bik_od` REAL ( 20 ) NOT NULL, `bik_cd` REAL ( 20 ) NOT NULL")
         self.dips_id = ""
         self.dip_array = []
         try:
-            self.dip_array = get_data("dips")[0]
+            self.dip_array = self.definitions.get_data("dips")[0]
             self.dips_id = self.dip_array[0]
         except IndexError:
             pass
@@ -122,16 +130,17 @@ class FuelDips(Gtk.Dialog):
             self.dips_caller("button")
         elif response == Gtk.ResponseType.CANCEL:
             print("cancelled")
+        self.database.__del__()
         self.destroy()
 
     def dips_caller(self, widget):
         if len(self.pms_od.get_text()) and len(self.pms_cd.get_text()) and \
                 len(self.ago_od.get_text()) and len(self.ago_cd.get_text()) \
                 and len(self.bik_od.get_text()) and len(self.bik_cd.get_text()) > 0:
-            results = dips(self.dips_id, self.pms_od.get_text(), self.pms_cd.get_text(),
-                           self.ago_od.get_text(),
-                           self.ago_cd.get_text(), self.bik_od.get_text()
-                           , self.bik_cd.get_text())
+            results = self.definitions.dips(self.dips_id, self.pms_od.get_text(), self.pms_cd.get_text(),
+                                            self.ago_od.get_text(),
+                                            self.ago_cd.get_text(), self.bik_od.get_text()
+                                            , self.bik_cd.get_text())
             self.pms_dp.set_text(results[0])
             self.ago_dp.set_text(results[1])
             self.bik_dp.set_text(results[2])

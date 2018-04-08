@@ -1,8 +1,0 @@
-CREATE TABLE "Inventory" ( `Inventory_id` INT AUTO_INCREMENT,
- `branchid` INTEGER NOT NULL, `Inventory_name` TEXT, PRIMARY KEY(`Inventory_id`) )
-
- CREATE TABLE "Purchases" ( `id` INTEGER PRIMARY KEY AUTOINCREMENT,
-  `branchid` INT ( 2 ) NOT NULL, `date` DATE NOT NULL,
-   `Invoice_id` INT ( 20 ) NOT NULL, `Inventory_id` INT ( 20 ) NOT NULL,
-    `quantity` INT ( 6 ) NOT NULL, `unit_price` INT ( 9 ) NOT NULL )
-

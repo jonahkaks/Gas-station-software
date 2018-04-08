@@ -1,5 +1,7 @@
-from Sales import Sales
-from definitions import *
+import gi
+
+from controller import ControllerWindow
+from definitions import Definitions
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -44,13 +46,15 @@ authenticates a user
         this is the function that is used to login into the sales window
         :param widget: this gets the clicked button to authenticate a user
         """
-        allowed = login(self.username.get_text(), self.password.get_text())
+        definitions = Definitions()
+        allowed = definitions.login(self.username.get_text(), self.password.get_text())
 
         while not allowed:
             self.label.set_markup("<span color=\'red\'><b><i>Invalid login try again</i></b></span>")
             self.show_all()
             return 0
-        self.sales_window = Sales(eval(allowed[1]))
-        self.sales_window.set_title(allowed[0].upper() + " DAY BOOK")
+        self.sales_window = ControllerWindow(allowed[0], eval(allowed[2]))
+        self.sales_window.set_title(allowed[1].upper() + " DAY BOOK")
         self.sales_window.set_application(self.get_application())
+        self.sales_window.show_all()
         self.destroy()
