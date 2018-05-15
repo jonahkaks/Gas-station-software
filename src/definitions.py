@@ -114,9 +114,7 @@ class Definitions(object):
     def sales_shs(self, index=0, litres=0, price=0):
         price = int(price)
         litres = float(litres)
-
         real_insert(self.pr, index, price)
-
         real_insert(self.amount_array, index, litres * price)
         return self.amount_array[index], add_array(self.amount_array)
 
@@ -128,7 +126,6 @@ class Definitions(object):
                     " quantity={2}, unit_price={3}".format(invoice,
                                                            inventory, quantity, price)
             self.database.hupdate("Purchases", field, "id={0}".format(index))
-
             insert_id = index
         except sqlite3.OperationalError:
             insert_id = self.database.hinsert("Purchases", "date, branchid, Invoice_id,"
