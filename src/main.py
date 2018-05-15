@@ -13,10 +13,9 @@ import sys
 
 import gi
 
-from Login import Login
-
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib, Gio
+from src.Login import Login
 
 MENU_XML = """
 <?xml version="1.0" encoding="UTF-8"?>
@@ -108,7 +107,7 @@ class Application(Gtk.Application):
         self.set_app_menu(builder.get_object("app-menu"))
 
         css_provider = Gtk.CssProvider()
-        css_provider.load_from_path('application.css')
+        css_provider.load_from_path('../data/application.css')
         screen = Gdk.Screen.get_default()
         style_context = Gtk.StyleContext()
         style_context.add_provider_for_screen(screen, css_provider,

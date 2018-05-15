@@ -96,6 +96,7 @@ class Calc(Gtk.Dialog):
         for i in range(0, len(self.store), 1):
             statement += eval(self.store[i])
         self.entry.set_text(statement)
+        self.show_all()
 
     def answer(self, widget):
         result = self.entry.get_text()
@@ -112,4 +113,3 @@ class Calc(Gtk.Dialog):
     def empty(self, widget):
         self.store = []
         self.entry.set_text("")
-

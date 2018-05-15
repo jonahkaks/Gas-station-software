@@ -1,18 +1,20 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-from accounting import *
-from calculator import Calc
-from dips import *
-from inventory import *
-from notebook import NoteBook
-from settings import Settings
+from src.dips import *
+from src.inventory import *
+from src.libaccounting import accounting
+from src.notebook import NoteBook
+from src.settings import Settings
+from src.utils import calculator
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 
 class ControllerWindow(Gtk.ApplicationWindow):
+    date_range = None
+
     def __init__(self, branch_id, y, *args, **kwargs):
         super(ControllerWindow, self).__init__(*args, **kwargs)
         self.definitions = Definitions()
@@ -36,9 +38,9 @@ class ControllerWindow(Gtk.ApplicationWindow):
         self.inventory = Gtk.MenuItem("Inventory")
         self.inventory.set_submenu(self.inventory_menu)
         self.purchase = Gtk.MenuItem("Purchases")
-        self.purchase.connect("activate", self.top_menu_caller, "purchase")
+        self.purchase.connect("activate", self.top_menu_caller, branch_id, "purchase")
         self.add_inventory_item = Gtk.MenuItem("Add Inventory")
-        self.add_inventory_item.connect("activate", self.top_menu_caller, "add_item")
+        self.add_inventory_item.connect("activate", self.top_menu_caller, branch_id, "add_item")
         self.inventory_menu.append(self.add_inventory_item)
         self.inventory_menu.append(self.purchase)
         self.menubar.append(self.inventory)
@@ -47,9 +49,9 @@ class ControllerWindow(Gtk.ApplicationWindow):
         self.reports_menu_d = Gtk.MenuItem("Reports")
         self.reports_menu_d.set_submenu(self.reports_menu)
         cash = Gtk.MenuItem("CashBook")
-        cash.connect("activate", self.top_menu_caller, "cash")
+        cash.connect("activate", self.top_menu_caller, branch_id, "cash")
         trial_balance = Gtk.MenuItem("Trial Balance")
-        trial_balance.connect("activate", self.top_menu_caller, "trial")
+        trial_balance.connect("activate", self.top_menu_caller, branch_id, "trial")
         self.reports_menu.append(cash)
         self.reports_menu.append(trial_balance)
         self.reports_menu.append(Gtk.MenuItem("Trading Profit and Loss"))
@@ -61,50 +63,48 @@ class ControllerWindow(Gtk.ApplicationWindow):
         self.stock.set_submenu(self.stock_menu)
         self.dips = Gtk.MenuItem("Dips")
         self.stock_menu.append(self.dips)
-        self.dips.connect("activate", self.top_menu_caller, "dips")
+        self.dips.connect("activate", self.top_menu_caller, branch_id, "dips")
         self.menubar.append(self.stock)
 
         self.settings_button = Gtk.MenuItem("Settings")
         self.settings_button.set_use_underline(True)
-        self.settings_button.connect("activate", self.top_menu_caller, "settings")
+        self.settings_button.connect("activate", self.top_menu_caller, branch_id, "settings")
         self.menubar.append(self.settings_button)
 
         self.utilities = Gtk.MenuItem("Utilities")
-        self.utilities.connect("activate", self.top_menu_caller, "calc")
+        self.utilities.connect("activate", self.top_menu_caller, branch_id, "calc")
         self.menubar.append(self.utilities)
         self.add(self.box)
         self.box.pack_start(self.menubar, False, False, 0)
         self.box.pack_start(self.notebook, True, True, 0)
 
-    def top_menu_caller(self, widget, name):
+    def top_menu_caller(self, widget, branch_id, name):
         if name == "cash":
-            cash = ThreeColumn(self.definitions.get_id(), self.definitions.get_date(), "Cash Book", self)
+            cash = accounting.ThreeColumn(branch_id, self.notebook.accounts, self)
             cash.show_all()
         if name == "trial":
-            cash = TrialBalance(self.definitions.get_id(), self.definitions.get_date(),
-                                "Trial Balance As At {0}".format(str(self.definitions.get_date())),
-                                self)
+            cash = accounting.TrialBalance(branch_id, self.notebook.accounts, self)
             cash.show_all()
         if name == "calc":
-            Calc("Calculator", self)
+            calculator.Calc("Calculator", self)
 
         if name == "settings":
-            Settings(self.definitions.get_id(),
+            Settings(branch_id,
                      self.definitions.get_date(), "Settings", self, Gtk.DialogFlags.MODAL,
                      (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                       Gtk.STOCK_OK, Gtk.ResponseType.OK))
 
         if name == "purchase":
-            Purchases(self.definitions.get_id(),
-                      self.definitions.get_date(), "Purchases", self, Gtk.DialogFlags.MODAL,
+            Purchases(branch_id,
+                      self.notebook.sales, "Purchases", self, Gtk.DialogFlags.MODAL,
                       (Gtk.STOCK_OK, Gtk.ResponseType.OK,
                        Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
 
         if name == "dips":
-            FuelDips(self.definitions.get_id(), self.definitions.get_date(), "Fuel Dips", self,
+            FuelDips(branch_id, self.definitions.get_date(), "Fuel Dips", self,
                      Gtk.DialogFlags.MODAL, (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                                              Gtk.STOCK_OK, Gtk.ResponseType.OK))
         if name == "add_item":
-            Item(self.definitions.get_id(), "Add item", self, Gtk.DialogFlags.MODAL,
+            Item(branch_id, "Add item", self, Gtk.DialogFlags.MODAL,
                  (Gtk.STOCK_OK, Gtk.ResponseType.OK,
                   Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))

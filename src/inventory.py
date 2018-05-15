@@ -1,4 +1,4 @@
-from definitions import *
+from src.definitions import *
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio
@@ -6,12 +6,12 @@ from gi.repository import Gtk, Gio
 
 class Purchases(Gtk.Dialog):
 
-    def __init__(self, branch_id, date, *args):
+    def __init__(self, branch_id, sales, *args):
         Gtk.Dialog.__init__(self, *args)
         self.database = DataBase("julaw.db")
         self.definitions = Definitions()
         self.definitions.set_id(branch_id)
-        self.definitions.set_date(date)
+        self.definitions.set_date(sales.date)
         self.database.hcreate("Purchases", "`id` INTEGER PRIMARY KEY AUTOINCREMENT, "
                                            "`branchid` INT ( 2 ) NOT NULL, `date` DATE NOT NULL,"
                                            " `Invoice_id` INT ( 20 ) NOT NULL, `Inventory_id` INT ( 20 ) NOT NULL,"
@@ -66,7 +66,6 @@ class Purchases(Gtk.Dialog):
             real_insert(self.row_id, choice, insert)
 
     def add_row(self, widget, y):
-        image = []
         z = 0
         z += y
         if len(self.invoice) > 0:
@@ -174,8 +173,7 @@ class Item(Gtk.Dialog):
         self.definitions.set_id(branch_id)
         self.database.hcreate("Inventory", "`Inventory_id` INTEGER PRIMARY KEY AUTOINCREMENT,"
                                            " `branchid` INTEGER NOT NULL, `Inventory_code` INTEGER NOT NULL"
-                                           ", `Inventory_name` TEXT,"
-                                           " `Inventory_description` TEXT")
+                                           ", `Inventory_name` TEXT, `Inventory_description` TEXT, `Category` TEXT")
         self.item_code = Gtk.Entry()
         self.item_code.set_has_frame(False)
         self.item = Gtk.Entry()
@@ -185,6 +183,15 @@ class Item(Gtk.Dialog):
         self.description.set_has_frame(False)
         self.description.set_placeholder_text("Description")
         self.item.set_placeholder_text("Inventory name")
+        store = Gtk.ListStore(str)
+        store.append(["Fuel"])
+        store.append(["Lubricants"])
+
+        combo = Gtk.ComboBox.new_with_model(store)
+        renderer_text = Gtk.CellRendererText()
+        combo.pack_start(renderer_text, True)
+        combo.add_attribute(renderer_text, "text", 0)
+        combo.set_active(0)
 
         box = self.get_content_area()
 
@@ -196,16 +203,22 @@ class Item(Gtk.Dialog):
         box.pack_start(self.item, True, False, 0)
         box.pack_start(Gtk.Label("Item Description"), True, False, 1)
         box.pack_start(self.description, True, False, 0)
+        box.pack_start(Gtk.Label("Item Type"), True, False, 1)
+        box.pack_start(combo, True, False, 0)
 
         self.show_all()
 
         response = self.run()
         if response == Gtk.ResponseType.OK:
+            model = combo.get_model()
+            tree_iter = combo.get_active_iter()
+            category = model[tree_iter][0]
+
             self.database.hinsert("Inventory", "branchid, Inventory_code,"
-                                               " Inventory_name, Inventory_description",
-                                  self.definitions.get_id(), self.item_code.get_text(),
+                                               " Inventory_name, Inventory_description, Category",
+                                  branch_id, self.item_code.get_text(),
                                   self.item.get_text(),
-                                  self.description.get_text())
+                                  self.description.get_text(), category)
             self.database.__del__()
         elif response == Gtk.ResponseType.CANCEL:
             self.database.__del__()

@@ -1,0 +1,9 @@
+data/org.gnome.Gas-Station-Software.desktop.in
+data/org.gnome.Gas-Station-Software.appdata.xml.in
+data/org.gnome.Gas-Station-Software.gschema.xml
+src/window.ui
+
+
+
+src/main.py
+src/window.py

@@ -1,7 +1,7 @@
 import gi
 
-from database_handler import *
-from definitions import Definitions
+from src.database_handler import DataBase
+from src.definitions import Definitions
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk

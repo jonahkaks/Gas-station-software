@@ -1,7 +1,7 @@
 import gi
 
-from controller import ControllerWindow
-from definitions import Definitions
+from src.controller import ControllerWindow
+from src.definitions import Definitions
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk

@@ -1,0 +1,11 @@
+CREATE TABLE `acc_type` ( `CatId` int(1) NOT NULL, `Category` varchar(12) NOT NULL )
+CREATE TABLE "accounts" ( `code` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, `parent` varchar ( 20 ), `name` NUMERIC NOT NULL, `description` varchar ( 20 ) NOT NULL, `type` int ( 1 ) NOT NULL, `value` TEXT NOT NULL, `placeholder` NUMERIC )
+CREATE TABLE `branch` ( `branchid` int(1) NOT NULL, `name` varchar(20) NOT NULL, `location` varchar(20) NOT NULL, `pumps` varchar(40) NOT NULL )
+CREATE TABLE `employees` ( `empid` int(4) NOT NULL, `firstname` varchar(20) NOT NULL, `lastname` varchar(20) NOT NULL, `residence` varchar(20) NOT NULL, `salary` int(6) NOT NULL, `branchid` int(4) NOT NULL )
+CREATE TABLE 'fuel'( `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, `branchid` TEXT, `date` DATE NOT NULL, `product` TEXT, `opening_meter` REAL, `closing_meter` REAL, `rtt` REAL, `price` INTEGER)
+CREATE TABLE "transactions" ( `transid` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, `branchid` int ( 2 ) NOT NULL, `account_id` int ( 10 ) NOT NULL, `contra_id` INTEGER NOT NULL, `date` date NOT NULL, `details` varchar ( 60 ) DEFAULT NULL, `folio` varchar ( 4 ) DEFAULT NULL, `debit` Real NOT NULL, `credit` REAL NOT NULL, `uuid` INTEGER )
+CREATE TABLE `users` ( `userid` int(4) NOT NULL, `firstname` varchar(20) NOT NULL, `lastname` varchar(20) NOT NULL, `username` varchar(10) NOT NULL, `password` varchar(8) NOT NULL, `branchid` int(2) NOT NULL )
+CREATE TRIGGER deletor after delete on transactions begin delete from transactions where upid=old.upid;end
+
+CREATE TRIGGER transactor after insert on transactions begin insert into transactions (branchid, account_id, contra_id, date, details, folio, debit, credit, upid) values(NEW.branchid, NEW.contra_id, NEW.account_id, NEW.date, NEW.details, NEW.folio, NEW.credit, NEW.debit, NEW.upid);END
+CREATE TRIGGER updator after update on transactions begin update transactions set branchid=NEW.branchid, account_id=NEW.contra_id, contra_id = NEW.account_id, date=NEW.date, details=NEW.details, folio=NEW.folio, debit=NEW.credit, credit=NEW.debit where upid=NEW.upid and transid is not NEW.transid;end

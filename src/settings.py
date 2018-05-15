@@ -3,8 +3,8 @@
 import gi
 
 gi.require_version('Gtk', '3.0')
-from definitions import *
-from database_handler import DataBase
+from src.definitions import *
+from src.database_handler import DataBase
 
 
 def replace_widget(old, new):

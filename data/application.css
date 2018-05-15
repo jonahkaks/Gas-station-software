@@ -1,0 +1,54 @@
+entry {
+    font: 14px "Times New Romans";
+    border: 1px solid;
+    background-color: white;
+
+}
+
+label {
+    color: black;
+    font-weight: bold;
+
+}
+
+button:active {
+    background-color: #0274d9;
+}
+
+button:hover {
+    transition: 100ms linear;
+}
+
+*:disabled {
+    background-color: #320a91;
+}
+
+label:focus {
+    background-color: #b4940f;
+}
+
+@define-color wbg_color whitesmoke;
+
+window {
+    background-color: @wbg_color;
+}
+
+@define-color cbg_color black;
+
+calender {
+    background-color: @cbg_color;
+
+}
+
+label:focus {
+    background-color: #b4940f;
+}
+
+
+
+
+
+
+
+
+

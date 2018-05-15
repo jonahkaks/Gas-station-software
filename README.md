@@ -1,6 +1,6 @@
 # Gas-Station-Software
 The software is trying to implement double entry book keeping in python.
-The software use python and Gtk for the interfaces
+The software use python and Gtk for the  graphical user interfaces
 #Development Process
 <table>
   <thead>
@@ -21,3 +21,9 @@ The software use python and Gtk for the interfaces
     </tr>
   </tbody>
 </table>
+
+#Goals
+
+<ul>
+<ol>To achieve high double entry accounting in gas</ol>
+</ul>

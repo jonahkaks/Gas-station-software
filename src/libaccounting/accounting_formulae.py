@@ -151,23 +151,3 @@ def npv(ico, nci, r, n):
     for x in range(n):
         pv_nci = pv_nci + (nci / ((1 + r) ** (x + 1)))
     return pv_nci - ico
-
-
-def accounting_equation(assets=0, liabilities=0, equity=0, income=0, expenses=0):
-    if not assets:
-        assets = 0
-    if not liabilities:
-        liabilities = 0
-    if not equity:
-        equity = 0
-    if not income:
-        income = 0
-    if not expenses:
-        expenses = 0
-
-    d = assets + expenses
-    c = equity + income + liabilities
-    if d == c:
-        return
-    else:
-        return d - c

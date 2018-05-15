@@ -4,16 +4,22 @@ import gi
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from definitions import *
+from src.definitions import *
 
 
 class ThreeColumn(Gtk.Dialog):
-    def __init__(self, branch_id, date, *args):
+    def __init__(self, branch_id, accounts, *args):
         Gtk.Dialog.__init__(self, *args)
         self.definitions = Definitions()
         self.definitions.set_id(branch_id)
-        self.definitions.set_date(date)
-        debit, credit = self.definitions.cashbook()
+        start_date = accounts.start_date.get_text()
+        stop_date = accounts.stop_date.get_text()
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = "CashBook As At {0}".format(stop_date)
+        self.set_titlebar(hb)
+
+        debit, credit = self.definitions.cashbook(start_date, stop_date)
 
         self.box = self.get_content_area()
         self.set_default_size(1000, 600)
@@ -50,12 +56,18 @@ class ThreeColumn(Gtk.Dialog):
 
 
 class TrialBalance(Gtk.Dialog):
-    def __init__(self, branch_id, date, *args):
+    def __init__(self, branch_id, accounts, *args):
         Gtk.Dialog.__init__(self, *args)
         self.definitions = Definitions()
-        self.definitions.set_date(date)
         self.definitions.set_id(branch_id)
-        trial_details = self.definitions.trial()
+        start_date = accounts.start_date.get_text()
+        stop_date = accounts.stop_date.get_text()
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = "Trial balance As At {0}".format(stop_date)
+        self.set_titlebar(hb)
+        date = "date>='{0}' AND date<='{1}'".format(start_date, stop_date)
+        trial_details = self.definitions.trial(date_range=date)
         self.debit = []
         self.credit = []
 

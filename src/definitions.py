@@ -1,8 +1,9 @@
 import sqlite3
+import time
 
 import gi
 
-from database_handler import DataBase
+from src.database_handler import DataBase
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -74,53 +75,33 @@ class Definitions(object):
                                               pms_od, pms_cd, ago_od, ago_cd, bik_od, bik_cd)
         return str(pms_od - pms_cd), str(ago_od - ago_cd), str(bik_od - bik_cd), insert_id
 
-    def insertion(self, table, date, operation, affected, position, details, folio, debit, credit):
-        debit = float(debit)
-        credit = float(credit)
-        if position is not None:
-            insert_id = position
-            pass
-        else:
-            insert_id = self.database.hinsert(table, "date, transfered, branchid, details, folio, debit, credit",
-                                              date, operation + " " + affected, self.get_id(),
-                                              details, folio, debit, credit)
-            if operation == "Debit":
-                if credit == 0.0:
-                    self.database.hinsert(affected, "date, uuid, transfered, branchid, details, folio, debit, credit",
-                                          date, table.lower() + str(insert_id), "Credit " + table,
-                                          self.get_id(), details, folio, debit, credit)
-
-                elif debit == 0.0:
-                    self.database.hinsert(affected, "date, uuid, transfered, branchid, details, folio, debit, credit",
-                                          date, table.lower() + str(insert_id), "Credit " + table,
-                                          self.get_id(), details, folio, credit, debit)
-
-            elif operation == "Credit":
-                if credit == 0.0:
-                    self.database.hinsert(affected, "date, uuid, transfered, branchid, details, folio, debit, credit",
-                                          date, table.lower() + str(insert_id), "Debit " + table,
-                                          self.get_id(), details, folio, credit, debit)
-
-                elif debit == 0.0:
-                    self.database.hinsert(affected, "date, uuid, transfered, branchid,"
-                                                    " details, folio, debit, credit",
-                                          date, table.lower() + str(insert_id), "Debit " + table,
-                                          self.get_id(), details, folio, debit, credit)
-            elif operation == "":
-                pass
-
-        return insert_id
+    def insertion(self, array):
+        for k in array:
+            account_id = array[k][0]
+            contra_id = array[k][1]
+            date = array[k][2]
+            details = array[k][3]
+            folio = array[k][4]
+            debit = array[k][5]
+            credit = array[k][6]
+            uuid = time.time()
+            self.database.hinsert("transactions", "branchid, account_id, contra_id,"
+                                                  " date, details, folio, debit, credit, uuid", self._branch_id,
+                                  account_id, contra_id, date, details, folio, debit, credit, uuid)
+        return 0
 
     def login(self, user, password):
         result = None
         try:
-            result = self.database.hselect("id, username, pumps",
+            result = self.database.hselect("branchid",
                                            "users",
-                                           " WHERE username='{0}' AND password='{1}'".format(user, password), "")[0]
+                                           " WHERE username='{0}' AND password='{1}'".format(user, password), "")[0][0]
         except IndexError:
             pass
         if result:
-            return result[0], result[1], result[2]
+            row = self.database.hselect("name, pumps", "branch", " WHERE branchid={0}".format(result), "")[0]
+
+            return result, row[0], row[1]
         else:
             return 0
 
@@ -156,15 +137,16 @@ class Definitions(object):
                                               invoice, inventory, quantity, price)
         return insert_id
 
-    def cashbook(self):
+    def cashbook(self, sdate, edate):
+        date = "date>='{0}' AND date<='{1}'".format(sdate, edate)
         debit = []
         credit = []
         cash = self.database.hselect("details, folio, debit, credit", "Cash",
                                      " WHERE branchid={0}".format(str(self.get_id())),
-                                     "AND date='{0}'".format(self.get_date()))
+                                     "AND {0}".format(date))
         bank = self.database.hselect("details, folio, debit, credit", "Bank",
                                      " WHERE branchid={0}".format(str(self.get_id())),
-                                     "AND date='{0}'".format(self.get_date()))
+                                     "AND {0}".format(date))
 
         for i, n in enumerate(bank):
             if n[2] > 0:
@@ -179,35 +161,25 @@ class Definitions(object):
                 credit.append((str(n[0]), n[1], str(thousand_separator(n[3])), None))
         return debit, credit
 
-    def trial(self):
-        levels = []
-        names = []
-        type = []
+    def trial(self, date_range):
         result = []
-        tables = self.database.hselect("name, level, account_type", "accounts",
-                                       " WHERE branchid={0}".format(str(self.get_id())), "")
+        code_names = {}
+        balance = 0
+        tables = self.database.hselect("code, name", "accounts", "", "")
+        res = self.database.hselect("account_id, debit, credit", "transactions",
+                                    " WHERE branchid={0} AND {1}".format(self.get_id(), date_range), "")
 
-        for name, level, account_type in tables:
-            names.append(name)
-            levels.append(level)
-            type.append(account_type)
-
-        for i, x in enumerate(names):
-            if x in levels:
-                pass
+        for n in tables:
+            code_names[n[0]] = n[1]
+        for x in res:
+            if balance and balance > 0:
+                balance += x[0] - x[1]
+                result.append((code_names[x[0]], str(balance), None))
+            elif balance and balance < 0:
+                balance += x[0] - x[1]
+                result.append((code_names[x[0]], None, str(balance * -1)))
             else:
-                try:
-                    res = self.database.hselect("SUM(debit-credit)", x,
-                                                " WHERE branchid={0}".format(str(self.get_id())),
-                                                " AND date='{0}'".format(str(self.get_date())))[0][0]
-                except IndexError:
-                    res = 0
-                if res and res > 0:
-                    result.append((x, str(res), None))
-                elif res and res < 0:
-                    result.append((x, None, str(res * -1)))
-                else:
-                    result.append((x, None, None))
+                result.append((code_names[x[0]], None, None))
         return result
 
     def get_price(self):
@@ -267,9 +239,10 @@ class Definitions(object):
     def get_cash_profit(self):
         cash_hand = 0
         try:
-            cash_hand = self.database.hselect("SUM(debit-credit)", "Cash",
+            cash_hand = self.database.hselect("SUM(debit-credit)", "transactions",
                                               "WHERE branchid={0} AND date='{1}'".format(self.get_id(),
-                                                                                         self.get_date()), "")[0][0]
+                                                                                         self.get_date()),
+                                              "AND account_id=(SELECT code FROM accounts where name='Cash')")[0][0]
         except:
             pass
 

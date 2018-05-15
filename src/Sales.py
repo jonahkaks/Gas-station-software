@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-from definitions import *
+from src.definitions import *
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -12,14 +12,12 @@ class Sales(Gtk.ScrolledWindow):
         self.database = DataBase("julaw.db")
         self.definitions = Definitions()
         self.definitions.set_id(branch_id)
-
-        self.database.hcreate("fuel", " `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"
-                                      " `branchid` TEXT, `date` DATE NOT NULL, `product` TEXT,"
-                                      " `opening_meter` REAL, `closing_meter` REAL, `rtt` REAL,"
-                                      " `price` INTEGER")
-
+        self.branch_id = branch_id
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.calender = Gtk.Calendar()
+        year, month, day = self.calender.get_date()
+        value = make_date(year, month, day)
+        self.date = value
         self.calender.connect("day-selected", self.changed_day)
         self.profit_label = Gtk.Label()
 
@@ -36,7 +34,7 @@ class Sales(Gtk.ScrolledWindow):
         self.grid = Gtk.Grid()
 
         self.box.pack_start(self.calender, False, False, 0)
-        self.box.pack_start(self.grid, False, False, 0)
+        self.box.pack_start(self.grid, False, True, 0)
         self.box.pack_end(self.button, False, True, 0)
         self.button.add(self.profit_label)
 
@@ -125,25 +123,12 @@ class Sales(Gtk.ScrolledWindow):
         year, month, day = self.calender.get_date()
         value = make_date(year, month, day)
         self.definitions.set_date(value)
+        self.date = value
         sales_results = self.definitions.get_data("fuel")
-        prices = []
         cash = self.definitions.get_cash_profit()
         self.profit_label.set_markup("<span color='blue'><b>Cash at hand:</b>{0}       </span>"
                                      "<span color='green'>Gross profit:{1}</span>".format(thousand_separator(cash),
                                                                                           30000))
-        pms, ago, bik = self.definitions.get_price()
-        try:
-            for m in range(0, len(self.product_label), 1):
-                b = self.product_label[m].get_label()
-                if b[0:3] == "PMS":
-                    self.price[m].set_text(str(pms))
-                elif b[0:3] == "AGO":
-                    self.price[m].set_text(str(ago))
-                elif b[0:3] == "BIK":
-                    self.price[m].set_text(str(bik))
-
-        except IndexError:
-            pass
 
         if len(sales_results) > 0:
             for hs in range(0, len(sales_results), 1):
@@ -163,7 +148,6 @@ class Sales(Gtk.ScrolledWindow):
                 self.amount[i].set_text("")
 
             self.total_amount.set_text("")
-        prices.clear()
         self.show_all()
 
     def subtraction(self, widget, choice):
