@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+import gi
 
+from src.database_handler import DataBase
+from src.definitions import thousand_separator
 from .dialog_account import DialogAccount
 from .double_entry import *
 from ..utils import Datetime
@@ -25,6 +28,7 @@ class Accounts(Gtk.ScrolledWindow):
         self.account_types = {}
         self.code_types = {}
         self.account_placeholder = {}
+        self.account_children = {}
         self.account_value = {'root': ['Assets', 'Expenses', 'Liabilities', 'Incomes', 'Equity']}
         self.fetch = Gtk.Button(label="View")
         self.hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -137,7 +141,7 @@ class Accounts(Gtk.ScrolledWindow):
                           self.account_codes, self.account_types, self.code_types, self.account_placeholder)
 
     def make_accounts(self, t, a):
-        for account in self.accounts:
+        for i, account in enumerate(self.accounts):
             if account[6] == a:
                 self.account_codes[account[1]] = account[0]
                 self.account_types[account[1]] = account[4]
@@ -145,27 +149,25 @@ class Accounts(Gtk.ScrolledWindow):
                 self.account_value[account[1]] = account[2]
                 self.account_placeholder[account[1]] = account[5]
                 its = self.account_list.append(t, ["document-new", account[1], account[3], None, None])
+                try:
+                    self.account_children[a] += [account[1]]
+                except KeyError:
+                    self.account_children[a] = [account[1]]
                 self.make_accounts(its, account[1])
 
     def update_balances(self, *args):
         store, path, iterator = args
-        account_type = self.account_types[store[path][1]]
-        account_code = self.account_codes[store[path][1]]
-        balance = 0.0
         color = "black"
-        for n in self.balance:
-            if n[0] == account_code and account_type in [1, 2]:
-                color = "DarkBlue"
-                balance += n[1] - n[2]
-            elif n[0] == account_code and account_type in [3, 4, 5]:
-                color = "DarkGreen"
-                balance += n[2] - n[1]
+        balance = self.get_balance(store[path][1], True)
+        account_type = self.account_types[store[path][1]]
+        if account_type in [1, 2]:
+            color = "blue"
+        elif account_type in [3, 4, 5]:
+            color = "green"
 
-        if balance:
-            if balance < 0:
-                color = "red"
-        else:
-            balance = 0.0
+        if balance < 0:
+            color = "red"
+
         store[path][3] = "Ush" + str(thousand_separator(balance))
         store[path][4] = color
 
@@ -225,3 +227,19 @@ class Accounts(Gtk.ScrolledWindow):
             return
         else:
             return right - left
+
+    def get_balance(self, account, recurse=True):
+        account_type = self.account_types[account]
+        account_code = self.account_codes[account]
+        balance = sum([n[1] - n[2] for n in self.balance if n[0] == account_code])
+        if account_type in [1, 2]:
+            pass
+        elif account_type in [3, 4, 5]:
+            balance *= -1
+        try:
+            if recurse:
+                balance += sum(self.get_balance(acc, recurse=recurse) for acc in self.account_children[account])
+        except KeyError:
+            pass
+
+        return balance

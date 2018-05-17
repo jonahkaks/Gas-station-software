@@ -63,7 +63,6 @@ class DialogAccount:
             name = self.name_entry.get_text()
             place = 0
             description = self.description_entry.get_text()
-            insert_id = 0
             if self.placeholder.get_active():
                 place = 1
             if self.parent:
@@ -72,7 +71,6 @@ class DialogAccount:
                 insert_id = database.hinsert("accounts", "parent, name, description, type, value, placeholder",
                                              account, name,
                                              description, self.parent_code, value, place)
-
                 account_list.append(row, ["document-new", name, description, "0", "black"])
             else:
                 x, y = self.selection.get_selected()
@@ -110,7 +108,3 @@ class DialogAccount:
         elif value == "Equity":
             self.selection.select_path(4)
             self.parent_code = 5
-
-    # def connect_signal(self):
-    # self.list.connect('changed', self.set_parent, 1)
-    # self.list1.connect('changed', self.set_parent, 2)

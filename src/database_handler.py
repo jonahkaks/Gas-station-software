@@ -18,8 +18,6 @@ class DataBase:
         return self.cur.lastrowid
 
     def hselect(self, operation, table, condition1, condition2):
-        print("SELECT {0} FROM {1}  {2} {3}".format(operation, table,
-                                                    condition1, condition2))
         try:
             self.cur.execute("SELECT {0} FROM {1}  {2} {3}".format(operation, table,
                                                                    condition1, condition2))
@@ -29,19 +27,16 @@ class DataBase:
 
     def hcreate(self, table, sql):
         try:
-            print("CREATE TABLE IF NOT EXISTS '{0}'({1})".format(table, sql))
             self.cur.execute("CREATE TABLE IF NOT EXISTS '{0}'({1})".format(table, sql))
             self.conn.commit()
         except sqlite3.OperationalError:
             pass
 
     def hupdate(self, table, field, condition):
-        print("UPDATE  {0} SET {1} WHERE {2}".format(table, field, condition))
         self.cur.execute("UPDATE  {0} SET {1} WHERE {2}".format(table, field, condition))
         self.conn.commit()
 
     def hdelete(self, table, condition):
-        print("DELETE FROM {0} WHERE {1}".format(table, condition))
         try:
             self.cur.execute("DELETE FROM {0} WHERE {1}".format(table, condition))
             self.conn.commit()
