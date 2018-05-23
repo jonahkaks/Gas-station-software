@@ -10,15 +10,15 @@ from gi.repository import Gtk
 
 
 class NoteBook(Gtk.Notebook):
-    def __init__(self, branch_id, y, *args, **kwargs):
+    def __init__(self, branch_id, *args, **kwargs):
         super(NoteBook, self).__init__(*args, **kwargs)
         self.accounts = accounts.Accounts(branch_id)
-        self.sales = Sales(branch_id, y)
+        self.sales = Sales(branch_id)
 
-        self.create_tab(self.sales, "Sales", 0)
+        self.create_tab(self.sales, "Sales", 0, False)
         self.create_tab(self.accounts, "Accounts", 1)
 
-    def create_tab(self, widget, title, pos):
+    def create_tab(self, widget, title, pos, a=True):
         hbox = Gtk.Box(False, 0)
         label = Gtk.Label(title)
         hbox.pack_start(label, True, True, 0)
@@ -26,7 +26,10 @@ class NoteBook(Gtk.Notebook):
         btn = Gtk.Button()
         btn.set_relief(Gtk.ReliefStyle.NONE)
         btn.set_focus_on_click(False)
-        btn.add(close_image)
+        if a:
+            btn.add(close_image)
+        else:
+            pass
         hbox.pack_start(btn, False, False, 0)
         hbox.show_all()
         self.insert_page(widget, hbox, pos)

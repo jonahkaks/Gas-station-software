@@ -1,147 +1,226 @@
-import gi
+from .definitions import *
 
-from src.database_handler import DataBase
-from src.definitions import Definitions
+try:
+    gi.require_version('Gtk', '3.0')
+    from gi.repository import Gtk, Gio, GLib, Gdk
+except ImportError as e:
+    print(e)
 
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
 
-
-class FuelDips(Gtk.Dialog):
-
-    def __init__(self, branch_id, date, *args):
-        Gtk.Dialog.__init__(self, *args)
-        self.database = DataBase("julaw.db")
-        self.definitions = Definitions()
-        self.definitions.set_id(branch_id)
-        self.definitions.set_date(date)
-
-        self.database.hcreate("Dips", "`id` INTEGER PRIMARY KEY AUTOINCREMENT,"
-                                      " `branchid` INT ( 2 ) NOT NULL, `date` DATE NOT NULL,"
-                                      "`pms_od` REAL ( 20 ) NOT NULL, `pms_cd` REAL ( 20 ) NOT NULL,"
-                                      " `ago_od` REAL ( 20 ) NOT NULL, `ago_cd` REAL ( 20 ) NOT NULL,"
-                                      " `bik_od` REAL ( 20 ) NOT NULL, `bik_cd` REAL ( 20 ) NOT NULL")
-        self.dips_id = ""
-        self.dip_array = []
-        try:
-            self.dip_array = self.definitions.get_data("dips")[0]
-            self.dips_id = self.dip_array[0]
-        except IndexError:
-            pass
-        self.pms_dp = Gtk.Entry()
-        self.pms_dp.set_has_frame(False)
-        self.pms_cd = Gtk.Entry()
-        self.pms_cd.set_has_frame(False)
-        self.pms_od = Gtk.Entry()
-        self.pms_od.set_has_frame(False)
-        self.ago_dp = Gtk.Entry()
-        self.ago_dp.set_has_frame(False)
-        self.ago_cd = Gtk.Entry()
-        self.ago_cd.set_has_frame(False)
-        self.ago_od = Gtk.Entry()
-        self.ago_od.set_has_frame(False)
-        self.bik_dp = Gtk.Entry()
-        self.bik_dp.set_has_frame(False)
-        self.bik_cd = Gtk.Entry()
-        self.bik_cd.set_has_frame(False)
-        self.bik_od = Gtk.Entry()
-        self.bik_od.set_has_frame(False)
-        self.set_default_size(600, 400)
-        self.set_border_width(40)
-        box = self.get_content_area()
-        grid = Gtk.Grid(column_spacing=0, row_spacing=0)
-        box.pack_start(grid, False, False, 0)
-
-        grid.attach(Gtk.Label("Product"), 2, 0, 1, 1)
-        grid.attach(Gtk.Label("Opening Stock"), 4, 0, 1, 1)
-        grid.attach(Gtk.Label("Closing Stock"), 6, 0, 1, 1)
-        grid.attach(Gtk.Label("Sales By Dips"), 8, 0, 1, 1)
-
-        grid.attach(Gtk.Label("PMS"), 2, 2, 1, 1)
-
-        self.pms_od.set_placeholder_text("opening dips")
-        self.pms_cd.set_placeholder_text("closing dips")
-        self.pms_dp.set_placeholder_text("difference")
-        dips_total = Gtk.Entry()
-        dips_total.set_has_frame(False)
-
-        grid.attach(self.pms_od, 4, 2, 1, 1)
-        try:
-            self.pms_od.connect('changed', lambda widget:
-            self.pms_dp.set_text(
-                str(float(self.pms_od.get_text()) - float(self.pms_cd.get_text()))))
-            self.pms_cd.connect("changed", lambda widget:
-            self.pms_dp.set_text(
-                str(float(self.pms_od.get_text()) - float(self.pms_cd.get_text()))))
-            self.pms_dp.connect("changed", lambda widget: dips_total.set_text(str(
-                float(self.pms_dp.get_text()) + float(self.ago_dp.get_text()) +
-                float(self.bik_dp.get_text()))))
-            self.ago_od.connect('changed', lambda widget:
-            self.ago_dp.set_text(
-                str(float(self.ago_od.get_text()) - float(self.ago_cd.get_text()))))
-            self.ago_cd.connect("changed", lambda widget:
-            self.ago_dp.set_text(
-                str(float(self.ago_od.get_text()) - float(self.ago_cd.get_text()))))
-            self.ago_dp.connect("changed", lambda widget: dips_total.set_text(str(
-                float(self.pms_dp.get_text()) + float(self.ago_dp.get_text()) +
-                float(self.bik_dp.get_text()))))
-            self.bik_od.connect('changed', lambda widget: self.bik_dp.set_text(
-                str(float(self.bik_od.get_text()) - float(self.bik_cd.get_text()))))
-            self.bik_cd.connect('changed', lambda widget:
-            self.bik_dp.set_text(
-                str(float(self.bik_od.get_text()) - float(self.bik_cd.get_text()))))
-            self.bik_dp.connect("changed", lambda widget: dips_total.set_text(str(
-                float(self.pms_dp.get_text()) + float(self.ago_dp.get_text()) +
-                float(self.bik_dp.get_text()))))
-        except ValueError:
-            pass
-        self.ago_od.set_placeholder_text("opening dips")
-        self.ago_cd.set_placeholder_text("closing dips")
-        self.ago_dp.set_placeholder_text("difference")
-        grid.attach(self.ago_od, 4, 4, 1, 1)
-        grid.attach(self.ago_cd, 6, 4, 1, 1)
-        grid.attach(self.ago_dp, 8, 4, 1, 1)
-        grid.attach(Gtk.Label("BIK"), 2, 6, 1, 1)
-        self.bik_od.set_placeholder_text("opening_dips")
-        self.bik_cd.set_placeholder_text("closing_dips")
-        self.bik_dp.set_placeholder_text("difference")
-
-        dips_total.set_placeholder_text("totaldips")
-        grid.attach(self.bik_od, 4, 6, 1, 1)
-        grid.attach(self.bik_cd, 6, 6, 1, 1)
-        grid.attach(self.bik_dp, 8, 6, 1, 1)
-        grid.attach(dips_total, 8, 8, 1, 1)
-        grid.attach(self.pms_cd, 6, 2, 1, 1)
-        grid.attach(self.pms_dp, 8, 2, 1, 1)
-        grid.attach(Gtk.Label("AGO"), 2, 4, 1, 1)
-        try:
-            self.pms_od.set_text(str(self.dip_array[3]))
-            self.pms_cd.set_text(str(self.dip_array[4]))
-            self.ago_od.set_text(str(self.dip_array[5]))
-            self.ago_cd.set_text(str(self.dip_array[6]))
-            self.bik_od.set_text(str(self.dip_array[7]))
-            self.bik_cd.set_text(str(self.dip_array[8]))
-        except IndexError:
-            pass
+class Dips(Gtk.ScrolledWindow):
+    def __init__(self, branch_id, database, *args):
+        super(Dips, self).__init__(*args)
+        self.database = database
+        self.branch_id = branch_id
+        self.date_range = None
+        self.row_id = {}
+        self.pms = {}
+        self.ago = {}
+        self.bik = {}
+        self.fuel_code = {}
+        self.fuel_name = {}
+        self.store = Gtk.ListStore(str)
+        self.total_amount = []
+        self.account_list = Gtk.ListStore(str, str, str, str, str, str)
+        self.tree = Gtk.TreeView.new_with_model(self.account_list)
+        self.tree.set_grid_lines(Gtk.TreeViewGridLines.BOTH)
+        self.selection = self.tree.get_selection()
+        self.make_list()
+        self.add(self.tree)
+        self.update_tanks()
+        self.__connect_signals()
         self.show_all()
 
-        response = self.run()
-        if response == Gtk.ResponseType.OK:
-            self.dips_caller("button")
-        elif response == Gtk.ResponseType.CANCEL:
-            print("cancelled")
-        self.database.__del__()
-        self.destroy()
+    def __connect_signals(self):
+        self.tree.connect("key-press-event", self.key_tree_tab)
+        self.connect("destroy", Gtk.main_quit)
 
-    def dips_caller(self, widget):
-        if len(self.pms_od.get_text()) and len(self.pms_cd.get_text()) and \
-                len(self.ago_od.get_text()) and len(self.ago_cd.get_text()) \
-                and len(self.bik_od.get_text()) and len(self.bik_cd.get_text()) > 0:
-            results = self.definitions.dips(self.dips_id, self.pms_od.get_text(), self.pms_cd.get_text(),
-                                            self.ago_od.get_text(),
-                                            self.ago_cd.get_text(), self.bik_od.get_text()
-                                            , self.bik_cd.get_text())
-            self.pms_dp.set_text(results[0])
-            self.ago_dp.set_text(results[1])
-            self.bik_dp.set_text(results[2])
-            self.dips_id = results[3]
+    def set_date(self, date):
+        self.date_range = date
+        self.account_list.clear()
+        self.update_display()
+
+    @staticmethod
+    def add_list(array):
+        total = 0
+        for v in array:
+            total += array[v]
+        return total
+
+    def update_sales_meter(self, product, value, choice):
+        ans = 0
+        if product[:3] == "PMS":
+            self.pms[choice] = float(value)
+            ans = self.add_list(self.pms)
+        elif product[:3] == "AGO":
+            self.ago[choice] = float(value)
+            ans = self.add_list(self.ago)
+        elif product[:3] == "BIK":
+            self.bik[choice] = float(value)
+            ans = self.add_list(self.bik)
+
+        counter = 0
+        n = 0
+        for i in range(0, len(self.account_list), 1):
+            if self.account_list[i][0] == product[:3]:
+                self.account_list[i][4] = str(ans)
+                counter = 1
+                break
+            n = i
+        if counter:
+            self.calculate_balance(n)
+            pass
+        else:
+            self.account_list[n][0] = product
+            self.account_list[n][4] = str(ans)
+            self.append_rows(n + 1)
+        self.calculate_balance(n)
+
+    def make_list(self):
+        renderer_combo = Gtk.CellRendererCombo()
+        renderer_combo.set_property("editable", True)
+        renderer_combo.set_property("model", self.store)
+        renderer_combo.set_property("text-column", 0)
+        renderer_combo.set_property("has-entry", False)
+        renderer_combo.connect("edited", self.edit_data)
+        renderer_combo.set_fixed_size(100, 25)
+        column = Gtk.TreeViewColumn("Tanks", renderer_combo, text=0)
+        self.tree.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        renderer.set_property("editable", True)
+        renderer.set_fixed_size(100, 25)
+        renderer.connect("edited", self.edit_data)
+        column = Gtk.TreeViewColumn("Opening Dips", renderer, text=1)
+        self.tree.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        renderer.set_property("editable", True)
+        renderer.set_fixed_size(100, 25)
+        column = Gtk.TreeViewColumn("Closing Dips", renderer, text=2)
+        renderer.connect("edited", self.edit_data)
+        self.tree.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        renderer.set_property("editable", False)
+        renderer.set_fixed_size(100, 25)
+        column = Gtk.TreeViewColumn("Sales Dips", renderer, text=3)
+        self.tree.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        renderer.set_property("editable", False)
+        renderer.set_fixed_size(100, 25)
+        column = Gtk.TreeViewColumn("Sales Meter", renderer, text=4)
+        self.tree.append_column(column)
+
+        renderer = Gtk.CellRendererText()
+        renderer.set_property("editable", False)
+        renderer.set_fixed_size(100, 25)
+        column = Gtk.TreeViewColumn("Difference", renderer, text=5)
+        self.tree.append_column(column)
+
+    def update_tanks(self):
+        self.fuel_code.clear()
+        self.fuel_name.clear()
+        tanks = self.database.hselect("id, name", "tanks", "", "")
+        for n in tanks:
+            self.store.append([n[1]])
+            self.fuel_code[n[1]] = n[0]
+            self.fuel_name[n[0]] = n[1]
+
+    def edit_data(self, widget, row, value):
+        path, col = self.tree.get_cursor()
+        header = col.get_title().split(" ")[0].lower()
+        columns = [c for c in self.tree.get_columns() if c.get_visible()]
+        col_num = columns.index(col)
+        ids = 0
+        try:
+            ids = self.row_id[int(str(row)) + 1]
+        except KeyError:
+            pass
+        treeiter = self.account_list.get_iter(path)
+        self.account_list.set_value(treeiter, col_num, value)
+        if header == "tanks":
+            header = "tank_id"
+            value = self.fuel_code[value]
+
+        if ids:
+            header = header.lower()
+            self.database.hupdate("Dips", "{0}='{1}'".format(header, value), "id={0}".format(ids))
+        else:
+            pass
+        self.calculate_balance(path)
+
+    def calculate_balance(self, row):
+        opening = self.account_list[row][1]
+        closing = self.account_list[row][2]
+        dips = self.account_list[row][3]
+        meters = self.account_list[row][4]
+        if not opening:
+            opening = 0
+        if not closing:
+            closing = 0
+        if not dips:
+            dips = 0
+        if not meters:
+            meters = 0
+        litres = float(opening) - float(closing)
+        self.account_list[row][5] = str(float(meters) - float(dips))
+        self.account_list[row][3] = str(litres)
+
+    def insert_data(self, row):
+        rid = int(str(row))
+        product = self.account_list[row][0]
+        opening = self.account_list[row][1]
+        closing = self.account_list[row][2]
+        self.calculate_balance(row)
+        insert_id = self.database.hinsert("Dips", "branchid, date, tank_id, opening, closing", self.branch_id,
+                                          self.date_range, self.fuel_code[product], opening, closing)
+        self.row_id[rid] = insert_id
+        self.append_rows(int(rid) + 1)
+
+    def update_display(self):
+        data = self.database.hselect("id, tank_id, opening, closing",
+                                     "Dips", " WHERE branchid={0} AND "
+                                             "date ='{1}'".format(self.branch_id, self.date_range), "")
+        if data:
+            for i, n in enumerate(data):
+                self.row_id[i + 1] = n[0]
+                real_insert(self.total_amount, i, n[3] - n[2])
+                self.account_list.append([self.fuel_name[n[1]], str(n[2]), str(n[3]),
+                                          str(n[2] - n[3]), None, None])
+                self.calculate_balance(i)
+            self.row_id[len(data) + 1] = None
+            self.append_rows(len(data) + 1)
+        else:
+            self.append_rows(1)
+
+    def append_rows(self, index):
+        self.row_id[index] = None
+        self.account_list.append([None, None, None, None, None, None])
+
+    def key_tree_tab(self, treeview, event):
+        keyname = Gdk.keyval_name(event.keyval)
+        path, col = treeview.get_cursor()
+        columns = [c for c in treeview.get_columns() if c.get_visible()]
+        colnum = columns.index(col)
+
+        if keyname == "Tab" or keyname == "Esc" or keyname == "Enter":
+
+            if colnum + 1 <= 3:
+                next_column = columns[colnum + 1]
+            else:
+                tmodel = treeview.get_model()
+                titer = tmodel.iter_next(tmodel.get_iter(path))
+                opening = self.account_list[path][1]
+                closing = self.account_list[path][2]
+                if titer is None and opening and closing:
+                    self.insert_data(path)
+                    titer = tmodel.iter_next(tmodel.get_iter(path))
+                path = tmodel.get_path(titer)
+                next_column = columns[0]
+
+            if keyname in ['Tab', 'Enter']:
+                GLib.timeout_add(50, treeview.set_cursor, path, next_column, True)
+            elif keyname == 'Escape':
+                pass

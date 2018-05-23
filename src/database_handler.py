@@ -12,6 +12,8 @@ class DataBase:
         self.cur = self.conn.cursor()
 
     def hinsert(self, table, table_headers, *args):
+        print("INSERT OR IGNORE INTO {0}({1}) "
+              "VALUES{2}".format(table, table_headers, args))
         self.cur.execute("INSERT OR IGNORE INTO {0}({1}) "
                          "VALUES{2}".format(table, table_headers, args))
         self.conn.commit()
@@ -33,6 +35,7 @@ class DataBase:
             pass
 
     def hupdate(self, table, field, condition):
+        print("UPDATE  {0} SET {1} WHERE {2}".format(table, field, condition))
         self.cur.execute("UPDATE  {0} SET {1} WHERE {2}".format(table, field, condition))
         self.conn.commit()
 

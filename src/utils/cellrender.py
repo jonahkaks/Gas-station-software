@@ -1,3 +1,20 @@
+#! /usr/bin/env python
+# -*- encoding:utf-8 -*-
+# 文件名:cellrenderbutton.py
+"""Test code
+
+Description:________
+"""
+__version__ = "0.1"
+__date__ = "2009-02-20 15:38:24"
+__author__ = "Mingxi Wu <fengshenx@gmail.com> "
+__license__ = "Licensed under the GPL v2, see the file LICENSE in this tarball."
+__copyright__ = "Copyright (C) 2009 by Mingxi Wu <fengshenx@gmail.com>."
+# =================================================================================#
+# ChangeLog
+# 2009-11-18
+# TualatriX, make it can accept text data
+
 import gi
 
 gi.require_version('Gtk', '3.0')
@@ -6,43 +23,29 @@ from gi.repository import GObject as gobject
 
 
 class CellRendererButton(gtk.CellRenderer):
-    __gproperties__ = {"callable": (gobject.TYPE_PYOBJECT,
-                                    "callable property",
-                                    "callable property",
-                                    gobject.PARAM_READWRITE)}
+    __gsignals__ = {
+        'clicked': (gobject.SIGNAL_RUN_FIRST, gobject.TYPE_NONE, (gobject.TYPE_STRING,))
+    }
+
+    __gproperties__ = {
+        'text': (gobject.TYPE_STRING, 'Text', 'Text for button', '', gobject.PARAM_READWRITE)
+    }
     _button_width = 10
     _button_height = 10
 
-    def __init__(self):
-        self.__gobject_init__()
+    def __init__(self, text=None):
         gtk.CellRenderer.__init__(self)
-        self.set_property("xalign", 0.5)
-        self.set_property("mode", gtk.CELL_RENDERER_MODE_ACTIVATABLE)
-        self.callable = None
-        self.table = None
 
-    # __init__()
+        self.text = text
+        self.set_property('mode', gtk.CellRendererMode.ACTIVATABLE)
 
     def do_set_property(self, pspec, value):
-        if pspec.name == "callable":
-            if callable(value):
-                self.callable = value
-            else:
-                raise TypeError("callable property must be callable!")
-        else:
-            raise AttributeError("Unknown property %s" % pspec.name)
-
-    # do_set_property()
+        setattr(self, pspec.name, value)
 
     def do_get_property(self, pspec):
-        if pspec.name == "callable":
-            return self.callable
-        else:
-            raise AttributeError("Unknown property %s" % pspec.name)
+        return getattr(self, pspec.name)
 
-    # do_get_property()
-
-    def do_get_size(self, wid, cell_area):
+    def do_get_size(self, widget, cell_area):
         xpad = self.get_property("xpad")
         ypad = self.get_property("ypad")
 
@@ -62,9 +65,7 @@ class CellRendererButton(gtk.CellRenderer):
 
         return x, y, w, h
 
-    # do_get_size()
-
-    def do_render(self, window, wid, bg_area, cell_area, expose_area, flags):
+    def do_render(self, window, wid, bg_area, cell_area, expose_area, flags=True):
         if not window:
             return
 
@@ -76,32 +77,24 @@ class CellRendererButton(gtk.CellRenderer):
         # if flags & gtk.CELL_RENDERER_SELECTED :
         # state = gtk.STATE_ACTIVE
         # shadow = gtk.SHADOW_OUT
-        if flags & gtk.CELL_RENDERER_PRELIT:
-            state = gtk.STATE_PRELIGHT
-            shadow = gtk.SHADOW_ETCHED_OUT
+        if flags & gtk.CellRendererState.PRELIT:
+            state = gtk.StateFlags.PRELIGHT
+            shadow = gtk.ShadowType.ETCHED_OUT
         else:
-            state = gtk.STATE_NORMAL
-            shadow = gtk.SHADOW_OUT
-        wid.get_style().paint_box(window, state, shadow, cell_area,
-                                  wid, "button",
-                                  cell_area.x + x + xpad,
-                                  cell_area.y + y + ypad,
-                                  w - 6, h - 6)
-        flags = flags & ~gtk.STATE_SELECTED
+            state = gtk.StateFlags.NORMAL
+            shadow = gtk.ShadowType.OUT
+        wid.get_style().paint_layout(window, state, shadow, cell_area,
+                                     wid, "button",
+                                     cell_area.x + x + xpad,
+                                     cell_area.y + y + ypad,
+                                     w - 6, h - 6)
+        flags = flags & gtk.CellRendererState.SELECTED
         gtk.CellRendererText.do_render(self, window, wid, bg_area,
                                        (cell_area[0], cell_area[1] + ypad, cell_area[2], cell_area[3]), expose_area,
                                        flags)
 
-    # do_render()
-
-    def do_activate(self, event, wid, path, bg_area, cell_area, flags):
-        cb = self.get_property("callable")
-        if cb is not None:
-            cb(path)
-        return True
-
-
-# _CellRendererButton
+    def do_activate(self, event, widget, path, background_area, cell_area, flags):
+        self.emit('clicked', path)
 
 
 gobject.type_register(CellRendererButton)

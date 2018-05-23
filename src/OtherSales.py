@@ -1,27 +1,21 @@
-from src.database_handler import DataBase
-from src.definitions import *
+from .definitions import *
 
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GLib, Gdk
+try:
+    gi.require_version('Gtk', '3.0')
+    from gi.repository import Gtk, Gio, GLib, Gdk
+except ImportError as e:
+    print(e)
 
 
-class Purchases(Gtk.ScrolledWindow):
-    def __init__(self, branch_id, date, *args):
-        super(Purchases, self).__init__(*args)
-        builder = Gtk.Builder()
-        builder.add_from_file("../data/topmenu.glade")
-        self.dialog = builder.get_object("purchasedialog")
-        self.dialog.set_border_width(10)
-        self.dialog.set_size_request(920, 500)
-        self.dialog.set_modal(True)
-        self.dialog.set_title("Purchases")
-        self.box = builder.get_object("purchasebox")
-        self.database = DataBase("julaw.db")
+class OtherSales(Gtk.ScrolledWindow):
+    def __init__(self, branch_id, database, *args):
+        super(OtherSales, self).__init__(*args)
+        self.database = database
         self.branch_id = branch_id
-        self.date_range = date
+        self.date_range = None
         self.row_id = {}
-        self.data = {}
         self.inventory_code = {}
+        self.inventory_price = {}
         self.code_name = {}
         self.total_amount = []
         self.account_list = Gtk.ListStore(int, str, str, str, str, str)
@@ -31,22 +25,19 @@ class Purchases(Gtk.ScrolledWindow):
         self.selection = self.tree.get_selection()
         self.make_list()
         self.add(self.tree)
-        self.box.pack_start(self, True, True, 0)
         self.update_inventory()
         self.__connect_signals()
-        self.update_display()
         self.show_all()
-        response = self.dialog.run()
-        if response == Gtk.ResponseType.OK:
-            self.database.__del__()
-        elif response == Gtk.ResponseType.CANCEL:
-            self.database.__del__()
-        self.dialog.close()
 
     def __connect_signals(self):
         self.tree.connect("button-press-event", self.button_press_cb)
         self.tree.connect("key-press-event", self.key_tree_tab)
         self.connect("destroy", Gtk.main_quit)
+
+    def set_date(self, date):
+        self.date_range = date
+        self.account_list.clear()
+        self.update_display()
 
     def make_list(self):
         renderer = Gtk.CellRendererText()
@@ -101,9 +92,12 @@ class Purchases(Gtk.ScrolledWindow):
             pass
         treeiter = self.account_list.get_iter(path)
         self.account_list.set_value(treeiter, col_num, value)
+        if header == "itemcode":
+            self.account_list[path][col_num + 2] = str(self.inventory_price[value])
+
         if ids:
             header = header.lower()
-            self.database.hupdate("Purchases", "{0}='{1}'".format(header, value), "id={0}".format(ids))
+            self.database.hupdate("Sales", "{0}='{1}'".format(header, value), "id={0}".format(ids))
         else:
             pass
         self.calculate_balance(path)
@@ -111,12 +105,14 @@ class Purchases(Gtk.ScrolledWindow):
     def update_inventory(self):
         self.store.clear()
         self.inventory_code.clear()
-        inventory = self.database.hselect("inventory.code, inventory.name",
-                                          "inventory", "", "")
+        inventory = self.database.hselect("inventory.code, inventory.name, prices.price",
+                                          "inventory, prices", "where inventory.code=prices.code",
+                                          "AND inventory.type != 'Fuel'")
         for n in inventory:
             self.store.append([n[1]])
             self.inventory_code[n[1]] = n[0]
             self.code_name[n[0]] = n[1]
+            self.inventory_price[n[1]] = n[2]
 
     def calculate_balance(self, row):
         quantity = self.account_list[row][2]
@@ -137,7 +133,9 @@ class Purchases(Gtk.ScrolledWindow):
         quantity = self.account_list[row][2]
         price = self.account_list[row][3]
         self.calculate_balance(row)
-        self.data[str(rid)] = [self.branch_id, self.date_range, self.inventory_code[item_code], quantity, price]
+        insert_id = self.database.hinsert("Sales", "branchid, date, itemcode, quantity, price", self.branch_id,
+                                          self.date_range, self.inventory_code[item_code], quantity, price)
+        self.row_id[rid] = insert_id
         self.append_rows(int(rid) + 1)
 
     def append_rows(self, index):
@@ -146,8 +144,8 @@ class Purchases(Gtk.ScrolledWindow):
 
     def update_display(self):
         data = self.database.hselect("id, itemcode, quantity, price",
-                                     "Purchases", " WHERE branchid={0} AND "
-                                                  "date = '{1}'".format(self.branch_id, self.date_range), "")
+                                     "Sales", " WHERE branchid={0} AND "
+                                              "date = '{1}'".format(self.branch_id, self.date_range), "")
         if data:
             for i, n in enumerate(data):
                 self.row_id[i + 1] = n[0]
@@ -183,7 +181,7 @@ class Purchases(Gtk.ScrolledWindow):
             rows = int(str(t)) + 1
             record_id = self.row_id[rows]
             if record_id:
-                self.database.hdelete("Purchases", "id={0}".format(record_id))
+                self.database.hdelete("Sales", "id={0}".format(record_id))
             else:
                 record_id = rows
                 self.row_id.pop(record_id)
@@ -219,55 +217,3 @@ class Purchases(Gtk.ScrolledWindow):
                 GLib.timeout_add(50, treeview.set_cursor, path, next_column, True)
             elif keyname == 'Escape':
                 pass
-
-
-class Item(Gtk.Dialog):
-
-    def __init__(self, branch_id, *args):
-        Gtk.Dialog.__init__(self, *args)
-        self.database = DataBase("julaw.db")
-        self.definitions = Definitions()
-        self.definitions.set_id(branch_id)
-        self.item = Gtk.Entry()
-        self.item.set_has_frame(False)
-        self.item.set_placeholder_text("Item")
-        self.description = Gtk.Entry()
-        self.description.set_has_frame(False)
-        self.description.set_placeholder_text("Description")
-        self.item.set_placeholder_text("Inventory name")
-        store = Gtk.ListStore(str)
-        store.append(["Fuel"])
-        store.append(["Lubricants"])
-
-        combo = Gtk.ComboBox.new_with_model(store)
-        renderer_text = Gtk.CellRendererText()
-        combo.pack_start(renderer_text, True)
-        combo.add_attribute(renderer_text, "text", 0)
-        combo.set_active(0)
-
-        box = self.get_content_area()
-
-        self.set_default_size(300, 300)
-        self.set_border_width(50)
-        box.pack_start(Gtk.Label("Item Name"), True, False, 1)
-        box.pack_start(self.item, True, False, 0)
-        box.pack_start(Gtk.Label("Item Description"), True, False, 1)
-        box.pack_start(self.description, True, False, 0)
-        box.pack_start(Gtk.Label("Item Type"), True, False, 1)
-        box.pack_start(combo, True, False, 0)
-
-        self.show_all()
-
-        response = self.run()
-        if response == Gtk.ResponseType.OK:
-            model = combo.get_model()
-            tree_iter = combo.get_active_iter()
-            category = model[tree_iter][0]
-
-            self.database.hinsert("inventory", "name, description, type",
-                                  self.item.get_text(),
-                                  self.description.get_text(), category)
-            self.database.__del__()
-        elif response == Gtk.ResponseType.CANCEL:
-            self.database.__del__()
-        self.close()

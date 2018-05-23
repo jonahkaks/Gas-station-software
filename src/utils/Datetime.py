@@ -16,12 +16,13 @@ class CalendarEntry(gtk.Box):
         gtk.Box.__init__(self, False, 0)
         self.calendar = gtk.Calendar()
 
-        self.button = gtk.Button(label='v')
+        self.button = gtk.ToggleButton(label="v")
         self.button.set_size_request(5, 5)
         self.cwindow = gtk.Window()
         self.display = False
         self.currentDate = datetime.date.today()
         self.entry = gtk.Entry()
+        self.entry.set_editable(False)
         self.entry.set_has_frame(False)
         self.cwindow.set_decorated(False)
         self.cwindow.add(self.calendar)
@@ -37,7 +38,7 @@ class CalendarEntry(gtk.Box):
     def __connect_signals(self):
         self.day_selected_handle = self.calendar.connect('day-selected', self.update_entry)
         self.day_selected_double_handle = self.calendar.connect('day-selected-double-click', self.hide_widget)
-        self.clicked_handle = self.button.connect('clicked', self.show_widget)
+        self.clicked_handle = self.button.connect('toggled', self.show_widget)
         self.activate = self.entry.connect('activate', self.update_calendar)
         self.focus_out = self.entry.connect('focus-out-event', self.focus_out_event)
         self.keypress = self.entry.connect('key-press-event', self.hide_widget)
@@ -78,22 +79,31 @@ class CalendarEntry(gtk.Box):
 
     def hide_widget(self, *args):
         self.cwindow.hide()
+        self.button.set_active(False)
 
-    def show_widget(self, *args):
-        rect = self.entry.get_allocation()
-        main_window = self.button.get_toplevel()
-        pos, win_x, win_y = main_window.get_window().get_origin()
-        win_y += win_y
-        cal_x = win_x + rect.x
-        cal_y = win_y + rect.y + rect.height
+    def show_widget(self, widget):
+        if widget.get_active():
+            alloc = self.button.get_allocation()
+            nreq, req = self.cwindow.get_preferred_size()
+            pos, x, y = self.button.get_window().get_origin()
+            x += alloc.x
+            y += alloc.y
+            bwidth = alloc.width
+            bheight = alloc.height
 
-        if cal_x < 0:
-            cal_x = 0
-        if cal_y < 0:
-            cal_y = 0
+            x += bwidth - req.width
+            y += bheight
 
-        self.cwindow.move(cal_x, cal_y)
-        self.cwindow.show_all()
+            if x < 0:
+                x = 0
+
+            if y < 0:
+                y = 0
+
+            self.cwindow.move(x, y)
+            self.cwindow.show_all()
+        else:
+            self.hide_widget()
 
     def update_entry(self, *args):
         year, month, day = self.calendar.get_date()
@@ -115,6 +125,7 @@ class CalendarEntry(gtk.Box):
 
         self.set_date(dt)
         self.hide_widget()
+        self.button.set_active(False)
 
     def focus_out_event(self, *args):
         self.currentDate = self.entry.get_text()

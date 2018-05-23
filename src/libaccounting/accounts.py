@@ -1,9 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-import gi
 
-from src.database_handler import DataBase
-from src.definitions import thousand_separator
 from .dialog_account import DialogAccount
 from .double_entry import *
 from ..utils import Datetime
@@ -23,22 +20,21 @@ class Accounts(Gtk.ScrolledWindow):
         self.date_range = None
         self.balance = None
         self.start_date = Datetime.CalendarEntry()
+        self.start_date.entry.connect("changed", self.fetch_data)
         self.stop_date = Datetime.CalendarEntry()
+        self.stop_date.entry.connect("changed", self.fetch_data)
+
         self.account_codes = {}
         self.account_types = {}
         self.code_types = {}
         self.account_placeholder = {}
         self.account_children = {}
         self.account_value = {'root': ['Assets', 'Expenses', 'Liabilities', 'Incomes', 'Equity']}
-        self.fetch = Gtk.Button(label="View")
         self.hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.hbox.set_margin_top(20)
         self.hbox.set_margin_bottom(10)
-        self.hbox.pack_start(Gtk.Label("Start Date"), True, False, 0)
-        self.hbox.pack_start(self.start_date, False, False, 2)
-        self.hbox.pack_start(Gtk.Label("Stop Date"), True, False, 0)
-        self.hbox.pack_start(self.stop_date, False, True, 0)
-        self.hbox.pack_start(self.fetch, True, False, 0)
+        self.hbox.pack_start(self.start_date, False, False, 0)
+        self.hbox.pack_end(self.stop_date, False, True, 0)
 
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.box.pack_start(self.hbox, False, True, 0)
@@ -62,7 +58,8 @@ class Accounts(Gtk.ScrolledWindow):
         return accounts
 
     def __connect_signals(self):
-        self.fetch.connect("clicked", self.fetch_data)
+        self.start_date.entry.connect("changed", self.fetch_data)
+        self.stop_date.entry.connect("changed", self.fetch_data)
         self.tree.connect("row-activated", self.menu_caller)
         self.tree.connect("button-press-event", self.right_clicked)
         self.scrollable_tree_list.connect("button-press-event", self.right_clicked)

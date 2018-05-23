@@ -18,6 +18,10 @@ class DoubleEntry(Gtk.Dialog):
         self.account_code = acc_code
         self.calendar = Gtk.Calendar()
         self.cwindow = Gtk.Window()
+        self.cwindow.set_decorated(False)
+        self.cwindow.add(self.calendar)
+        self.cwindow.set_modal(True)
+        self.calendar.connect('day-selected-double-click', self.hide_widget)
         self.database = DataBase("julaw.db")
         self.definitions = Definitions()
         self.definitions.set_id(branch_id)
@@ -50,7 +54,7 @@ class DoubleEntry(Gtk.Dialog):
         self.box = self.get_content_area()
         self.entry_array = []
         self.tree = Gtk.TreeView.new_with_model(self.account_list)
-        self.tree.set_property("enable-grid-lines", True)
+        self.tree.set_enable_tree_lines(True)
         self.selection = self.tree.get_selection()
         self.selection.set_mode(Gtk.SelectionMode.MULTIPLE)
 
@@ -80,15 +84,14 @@ class DoubleEntry(Gtk.Dialog):
         self.tree.append_column(column)
 
         renderer = Gtk.CellRendererText()
-        renderer_toogle = Gtk.CellRendererToggle()
-        renderer_toogle.connect("toggled", self.date_popup)
+        renderer_button = Gtk.CellRendererToggle()
+        renderer_button.connect("toggled", self.show_widget)
         renderer.set_fixed_size(100, 25)
         renderer.set_property("editable", True)
         column = Gtk.TreeViewColumn("Date")
         column.pack_start(renderer, False)
         column.add_attribute(renderer, 'text', 1)
-        column.pack_end(renderer_toogle, False)
-        column.add_attribute(renderer_toogle, "active", 2)
+        column.pack_end(renderer_button, False)
         renderer.connect("edited", self.edit_data)
         self.tree.append_column(column)
 
@@ -136,18 +139,32 @@ class DoubleEntry(Gtk.Dialog):
         column = Gtk.TreeViewColumn("Balance", renderer, text=8)
         self.tree.append_column(column)
 
-    def date_popup(self, widget, path):
-        self.calendar = Gtk.Calendar()
-        self.cwindow = Gtk.Window()
-        self.cwindow.set_decorated(False)
-        self.cwindow.add(self.calendar)
-        self.cwindow.set_modal(True)
-        self.calendar.connect('day-selected', self.update_entry, path)
-        self.calendar.connect('day-selected-double-click', self.hide_widget)
-        self.cwindow.show_all()
-
     def hide_widget(self, *args):
         self.cwindow.hide()
+
+    def show_widget(self, widget, path):
+        if not widget.get_active():
+            alloc = widget.get_allocation()
+            nreq, req = self.cwindow.get_preferred_size()
+            pos, x, y = widget.get_window().get_origin()
+            x += alloc.x
+            y += alloc.y
+            bwidth = alloc.width
+            bheight = alloc.height
+
+            x += bwidth - req.width
+            y += bheight
+
+            if x < 0:
+                x = 0
+
+            if y < 0:
+                y = 0
+            self.cwindow.move(x, y)
+            self.cwindow.show_all()
+            self.calendar.connect('day-selected', self.update_entry, path)
+        else:
+            self.hide_widget()
 
     def update_entry(self, widget, path):
         year, month, day = self.calendar.get_date()
@@ -218,7 +235,7 @@ class DoubleEntry(Gtk.Dialog):
 
     def append_rows(self, index):
         self.row_id[index] = None
-        self.account_list.append([index, str(self.date.currentDate), False, "n", None,
+        self.account_list.append([index, str(self.date.currentDate), True, "n", None,
                                   None, None, None, None])
 
     def update_display(self):
@@ -242,7 +259,7 @@ class DoubleEntry(Gtk.Dialog):
                     pass
                 elif self.category in [3, 4, 5]:
                     balance *= -1
-                self.account_list.append([n + 1, array[4], False, array[6], array[5], self.codes[array[3]],
+                self.account_list.append([n + 1, array[4], True, array[6], array[5], self.codes[array[3]],
                                           str(array[7]),
                                           str(array[8]), str(balance)])
             self.row_id[len(data) + 1] = None
@@ -297,7 +314,7 @@ class DoubleEntry(Gtk.Dialog):
 
         if keyname == "Tab" or keyname == "Esc" or keyname == "Enter":
 
-            if colnum + 1 < len(columns):
+            if colnum + 1 <= 7:
                 next_column = columns[colnum + 1]
             else:
                 tmodel = treeview.get_model()

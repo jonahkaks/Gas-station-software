@@ -16,6 +16,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib, Gio
 from src.Login import Login
+from src.definitions import error_handler
 
 MENU_XML = """
 <?xml version="1.0" encoding="UTF-8"?>
@@ -152,6 +153,7 @@ class Application(Gtk.Application):
         """
         this function is used to destroy the whole application
         """
+        error_handler(self.window, "Are you Sure You Want to quit")
         self.quit()
 
 

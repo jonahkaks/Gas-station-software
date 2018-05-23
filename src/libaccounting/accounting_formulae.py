@@ -120,7 +120,7 @@ def dbal(c, s, r, l):
         if x == (l - 1):
             dexp = (c - s - ad)
         else:
-            dexp = (((c) / l) / (c) * r) * (c - ad)
+            dexp = ((c / l) / c * r) * (c - ad)
         res.append(dexp)
         ad = ad + dexp
     return res
