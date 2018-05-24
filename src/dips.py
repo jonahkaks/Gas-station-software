@@ -20,7 +20,6 @@ class Dips(Gtk.ScrolledWindow):
         self.fuel_code = {}
         self.fuel_name = {}
         self.store = Gtk.ListStore(str)
-        self.total_amount = []
         self.account_list = Gtk.ListStore(str, str, str, str, str, str)
         self.tree = Gtk.TreeView.new_with_model(self.account_list)
         self.tree.set_grid_lines(Gtk.TreeViewGridLines.BOTH)
@@ -71,7 +70,7 @@ class Dips(Gtk.ScrolledWindow):
             self.calculate_balance(n)
             pass
         else:
-            self.account_list[n][0] = product
+            self.account_list[n][0] = str(product)
             self.account_list[n][4] = str(ans)
             self.append_rows(n + 1)
         self.calculate_balance(n)
@@ -205,7 +204,7 @@ class Dips(Gtk.ScrolledWindow):
         columns = [c for c in treeview.get_columns() if c.get_visible()]
         colnum = columns.index(col)
 
-        if keyname == "Tab" or keyname == "Esc" or keyname == "Enter":
+        if keyname == "Tab":
 
             if colnum + 1 <= 3:
                 next_column = columns[colnum + 1]
@@ -219,8 +218,6 @@ class Dips(Gtk.ScrolledWindow):
                     titer = tmodel.iter_next(tmodel.get_iter(path))
                 path = tmodel.get_path(titer)
                 next_column = columns[0]
-
-            if keyname in ['Tab', 'Enter']:
-                GLib.timeout_add(50, treeview.set_cursor, path, next_column, True)
-            elif keyname == 'Escape':
-                pass
+        elif keyname == 'Escape':
+            pass
+        GLib.timeout_add(50, treeview.set_cursor, path, next_column, True)

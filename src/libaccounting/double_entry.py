@@ -311,8 +311,7 @@ class DoubleEntry(Gtk.Dialog):
         path, col = treeview.get_cursor()
         columns = [c for c in treeview.get_columns() if c.get_visible()]
         colnum = columns.index(col)
-
-        if keyname == "Tab" or keyname == "Esc" or keyname == "Enter":
+        if keyname == "Tab" or keyname == "Enter":
 
             if colnum + 1 <= 7:
                 next_column = columns[colnum + 1]
@@ -327,7 +326,6 @@ class DoubleEntry(Gtk.Dialog):
                 path = tmodel.get_path(titer)
                 next_column = columns[0]
 
-            if keyname in ['Tab', 'Enter']:
-                GLib.timeout_add(50, treeview.set_cursor, path, next_column, True)
-            elif keyname == 'Escape':
-                pass
+            GLib.timeout_add(50, treeview.set_cursor, path, next_column, True)
+        elif keyname == 'Escape':
+            pass

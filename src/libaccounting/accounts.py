@@ -164,7 +164,6 @@ class Accounts(Gtk.ScrolledWindow):
 
         if balance < 0:
             color = "red"
-
         store[path][3] = "Ush" + str(thousand_separator(balance))
         store[path][4] = color
 

@@ -98,18 +98,6 @@ class Definitions(object):
                 result.append((code_names[x[0]], None, None))
         return result
 
-    def get_cash_profit(self):
-        cash_hand = 0
-        try:
-            cash_hand = self.database.hselect("SUM(debit-credit)", "transactions",
-                                              "WHERE branchid={0} AND date='{1}'".format(self.get_id(),
-                                                                                         self.get_date()),
-                                              "AND account_id=(SELECT code FROM accounts where name='Cash')")[0][0]
-        except:
-            pass
-
-        return cash_hand
-
     def __del__(self):
         self.database.__del__()
 

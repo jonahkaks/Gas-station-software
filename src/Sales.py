@@ -147,9 +147,8 @@ class Sales(Gtk.ScrolledWindow):
         self.dip.set_date(value)
         self.date = value
         self.update_display()
-        cash = self.definitions.get_cash_profit()
         self.profit_label.set_markup("<span color='blue'><b>Cash at hand:</b>{0}       </span>"
-                                     "<span color='green'>Gross profit:{1}</span>".format(thousand_separator(cash),
+                                     "<span color='green'>Gross profit:{1}</span>".format(thousand_separator(67000),
                                                                                           30000))
         self.show_all()
 

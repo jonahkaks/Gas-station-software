@@ -68,6 +68,7 @@ class TrialBalance(Gtk.Dialog):
         self.set_titlebar(hb)
         date = "date>='{0}' AND date<='{1}'".format(start_date, stop_date)
         trial_details = self.definitions.trial(date_range=date)
+        print(trial_details)
         self.debit = []
         self.credit = []
 

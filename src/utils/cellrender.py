@@ -88,7 +88,7 @@ class CellRendererButton(gtk.CellRenderer):
                                      cell_area.x + x + xpad,
                                      cell_area.y + y + ypad,
                                      w - 6, h - 6)
-        flags = flags & gtk.CellRendererState.SELECTED
+        flags = flags & gtk.CellRendererState.SELEdCTED
         gtk.CellRendererText.do_render(self, window, wid, bg_area,
                                        (cell_area[0], cell_area[1] + ypad, cell_area[2], cell_area[3]), expose_area,
                                        flags)
