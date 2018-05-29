@@ -22,8 +22,4 @@ The software use python and Gtk for the  graphical user interfaces
   </tbody>
 </table>
 
-#Goals
 
-<ul>
-<ol>To achieve high double entry accounting in gas</ol>
-</ul>

@@ -53,49 +53,29 @@ class Definitions(object):
         else:
             return 0
 
-    def cashbook(self, sdate, edate):
-        date = "date>='{0}' AND date<='{1}'".format(sdate, edate)
-        debit = []
-        credit = []
-        cash = self.database.hselect("details, folio, debit, credit", "Cash",
-                                     " WHERE branchid={0}".format(str(self.get_id())),
-                                     "AND {0}".format(date))
-        bank = self.database.hselect("details, folio, debit, credit", "Bank",
-                                     " WHERE branchid={0}".format(str(self.get_id())),
-                                     "AND {0}".format(date))
-
-        for i, n in enumerate(bank):
-            if n[2] > 0:
-                debit.append((str(n[0]), n[1], None, str(thousand_separator(n[2]))))
-            elif n[2] == 0.0:
-                credit.append((str(n[0]), n[1], None, str(thousand_separator(n[3]))))
-
-        for i, n in enumerate(cash):
-            if n[2] > 0:
-                debit.append((str(n[0]), n[1], str(thousand_separator(n[2])), None))
-            elif n[2] == 0.0:
-                credit.append((str(n[0]), n[1], str(thousand_separator(n[3])), None))
-        return debit, credit
 
     def trial(self, date_range):
         result = []
         code_names = {}
-        balance = 0
-        tables = self.database.hselect("code, name", "accounts", "", "")
+        tables = self.database.hselect("code, name", "accounts", "where placeholder=0", "")
         res = self.database.hselect("account_id, debit, credit", "transactions",
                                     " WHERE branchid={0} AND {1}".format(self.get_id(), date_range), "")
 
         for n in tables:
             code_names[n[0]] = n[1]
-        for x in res:
+        for i in code_names:
+            balance = 0
+            for n in res:
+                if n[0] == i:
+                    balance += n[1] - n[2]
+                else:
+                    continue
             if balance and balance > 0:
-                balance += x[0] - x[1]
-                result.append((code_names[x[0]], str(balance), None))
+                result.append((code_names[i], str(balance), None))
             elif balance and balance < 0:
-                balance += x[0] - x[1]
-                result.append((code_names[x[0]], None, str(balance * -1)))
+                result.append((code_names[i], None, str(balance * -1)))
             else:
-                result.append((code_names[x[0]], None, None))
+                result.append((code_names[i], None, None))
         return result
 
     def __del__(self):

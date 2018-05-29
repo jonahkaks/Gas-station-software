@@ -193,7 +193,7 @@ class Sales(Gtk.ScrolledWindow):
         self.account_list[row][5] = str(litres)
         amount = litres * int(price)
         self.account_list[row][7] = str(amount)
-        self.dip.update_sales_meter(product, litres, int(row))
+        self.dip.update_sales_meter(product, litres, int(str(row)))
 
     def insert_data(self, row):
         rid = int(str(row)) + 1
