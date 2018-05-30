@@ -41,9 +41,6 @@ class ControllerWindow:
         self.window.show_all()
 
     def top_menu_caller(self, widget, branch_id, name):
-        if name == "Cash":
-            cash = accounting.ThreeColumn(branch_id, self.notebook.accounts, self.window)
-            cash.show_all()
         if name == "trial":
             cash = accounting.TrialBalance(branch_id, self.notebook.accounts, self.window)
             cash.show_all()

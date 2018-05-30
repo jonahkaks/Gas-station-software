@@ -7,54 +7,6 @@ from gi.repository import Gtk
 from src.definitions import *
 
 
-class ThreeColumn(Gtk.Dialog):
-    def __init__(self, branch_id, accounts, *args):
-        Gtk.Dialog.__init__(self, *args)
-        self.definitions = Definitions()
-        self.definitions.set_id(branch_id)
-        start_date = accounts.start_date.get_text()
-        stop_date = accounts.stop_date.get_text()
-        hb = Gtk.HeaderBar()
-        hb.set_show_close_button(True)
-        hb.props.title = "CashBook As At {0}".format(stop_date)
-        self.set_titlebar(hb)
-
-        debit, credit = self.definitions.cashbook(start_date, stop_date)
-
-        self.box = self.get_content_area()
-        self.set_default_size(1000, 600)
-        self.horizontal = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.horizontal.pack_start(Gtk.Label("Dr"), False, False, 0)
-        self.horizontal.pack_end(Gtk.Label("Cr"), False, False, 0)
-        self.box.pack_start(self.horizontal, False, False, 0)
-        self.hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-
-        self.debit_list = Gtk.ListStore(str, str, str, str)
-        self.credit_list = Gtk.ListStore(str, str, str, str)
-        for k, v in enumerate(debit):
-            self.debit_list.append(v)
-        for k, v in enumerate(credit):
-            self.credit_list.append(v)
-
-        self.debit_tree = Gtk.TreeView.new_with_model(self.debit_list)
-        for i, column_title in enumerate(["Details", "Folio", "Cash", "Bank"]):
-            renderer = Gtk.CellRendererText()
-            renderer.set_fixed_size(120, 20)
-            column = Gtk.TreeViewColumn(column_title, renderer, text=i)
-            self.debit_tree.append_column(column)
-        self.credit_tree = Gtk.TreeView.new_with_model(self.credit_list)
-        for i, column_title in enumerate(["Details", "Folio", "Cash", "Bank"]):
-            renderer = Gtk.CellRendererText()
-            renderer.set_fixed_size(120, 20)
-            column = Gtk.TreeViewColumn(column_title, renderer, text=i)
-            self.credit_tree.append_column(column)
-        self.hbox.pack_start(self.debit_tree, True, True, 0)
-        self.hbox.pack_end(self.credit_tree, True, True, 0)
-        self.scrollable_treelist = Gtk.ScrolledWindow()
-        self.box.pack_start(self.scrollable_treelist, True, True, 0)
-        self.scrollable_treelist.add(self.hbox)
-
-
 class TrialBalance(Gtk.Dialog):
     def __init__(self, branch_id, accounts, *args):
         Gtk.Dialog.__init__(self, *args)

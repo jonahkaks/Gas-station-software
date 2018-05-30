@@ -47,9 +47,13 @@ treeview.view header label {
     color: white;
 }
 
-treeview.view cell {
-    border: 1px solid;
+treeview.view {
+    background: whitesmoke;
+    border: 1px solid black;
+    color: black;
+    font-weight: bold;
 }
+
 
 calendar {
     border-color: black;

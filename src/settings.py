@@ -20,15 +20,6 @@ class Settings(Gtk.Dialog):
     def __init__(self, branch_id, date, *args):
         Gtk.Dialog.__init__(self, *args)
         self.database = DataBase("julaw.db")
-        self.definitions = Definitions()
-        self.definitions.set_date(date)
-        self.definitions.set_id(branch_id)
-        self.database.hcreate("Prices", "`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "
-                                        "`branchid` INTEGER NOT NULL, `start_date` DATE NOT NULL,"
-                                        " `stop_date` DATE NOT NULL,"
-                                        " `Inventory_code` INTEGER NOT NULL, `price` INTEGER NOT NULL")
-
-        self.save_price = Gtk.Button("Save")
         self.label = Gtk.Label()
         self.price = []
         self.popup = None
@@ -104,24 +95,6 @@ class Settings(Gtk.Dialog):
         self.grid.attach(self.label, 0, 6 + 2 * (y + 1), 2, 1)
 
         self.show_all()
-
-    def popover(self, widget, event, choice):
-        self.popup = Gtk.Menu.new()
-        product = []
-        inventory = self.database.hselect("Inventory_code, Inventory_name", "Inventory",
-                                          " WHERE branchid={0}".format(self.definitions.get_id()), "")
-        if len(inventory) == 0:
-            self.inventory[choice].set_editable(False)
-            error_handler(self, "pliz add inventory items first")
-            return
-
-        for x in range(0, len(inventory), 1):
-            product.append([inventory[x][0], Gtk.MenuItem(inventory[x][1])])
-            product[x][1].connect("activate", lambda widget, m: self.inventory[choice].set_text(str(product[m][0])),
-                                  x)
-            self.popup.insert(product[x][1], x)
-        self.popup.popup(None, None, None, None, event.button, Gtk.get_current_event_time())
-        self.popup.show_all()
 
     def insert_price(self, widget, event, choice):
         inventory = self.inventory[choice].get_text()
